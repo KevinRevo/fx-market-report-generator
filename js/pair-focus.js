@@ -276,7 +276,7 @@ window.PairFocus = (() => {
     App.showToast(currentLang === 'fr' ? 'Synchronisation du cours interbancaire TradingView...' : 'Synchronizing live TradingView interbank rate...', 'info', 2000);
 
     try {
-      const res = await fetch('/api/live-rates');
+      const res = await fetch('https://fx-market-report-generator.vercel.app/api/live-rates');
       const json = await res.json();
       if (json.success && json.data) {
         const d = json.data;
