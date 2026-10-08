@@ -23,6 +23,20 @@ window.EmailTemplates = (() => {
 
   const TEMPLATES = [
     {
+      id: 'ai_generator',
+      badge: '✨ IA',
+      nameFr: 'Générateur IA Sur-Mesure',
+      nameEn: 'Custom AI Generator',
+      descFr: 'Fournissez un exemple et laissez l\'IA rédiger un e-mail basé sur le contexte actuel de la paire.',
+      descEn: 'Provide an example and let AI write an email based on the current pair context.',
+      subjectFr: 'Généré par IA...',
+      subjectEn: 'AI Generated...',
+      isAI: true,
+      contentFr: (d) => `<div style="font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-wrap;" id="ai-generated-content-fr">${window.EmailTemplates.aiGeneratedContent || '<i>Remplissez le formulaire à gauche et cliquez sur Générer pour créer l\'e-mail...</i>'}</div>`,
+      contentEn: (d) => `<div style="font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-wrap;" id="ai-generated-content-en">${window.EmailTemplates.aiGeneratedContent || '<i>Fill out the form on the left and click Generate to create the email...</i>'}</div>`
+    },
+
+    {
       id: 'daily_summary',
       badge: 'DAILY',
       nameFr: 'Point de Marché FX Quotidien',
@@ -437,6 +451,34 @@ window.EmailTemplates = (() => {
               }).join('')}
             </div>
 
+            ${selectedTemplateId === 'ai_generator' ? `
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 16px;">
+              <h4 style="margin: 0 0 10px 0; font-size: 12px; color: #1e293b; text-transform: uppercase;">Paramètres IA</h4>
+              
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Paire de devises :</label>
+              <select id="ai-pair-selector" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px;">
+                <option value="EURUSD">EUR/USD</option>
+                <option value="EURCHF">EUR/CHF</option>
+                <option value="CHFUSD">CHF/USD</option>
+                <option value="CZKUSD">CZK/USD</option>
+                <option value="USDHUF">USD/HUF</option>
+                <option value="EURPLN">EUR/PLN</option>
+                <option value="USDPLN">USD/PLN</option>
+              </select>
+
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Votre exemple d'e-mail (Modèle) :</label>
+              <textarea id="ai-example-text" style="width: 100%; height: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px; resize: vertical;" placeholder="Collez ici un ancien e-mail que vous avez écrit pour donner à l'IA votre style et la structure attendue..."></textarea>
+              
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Clé API Gemini (sauvegardée localement) :</label>
+              <input type="password" id="ai-api-key" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px;" placeholder="AIzaSy...">
+              
+              <button onclick="window.EmailTemplates.generateAI()" style="width: 100%; padding: 8px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                ✨ Générer l'e-mail avec l'IA
+              </button>
+              <div style="font-size: 9px; color: #94a3b8; margin-top: 6px; text-align: center;">Les données de marché actuelles seront automatiquement injectées.</div>
+            </div>
+            ` : ''}
+
             <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-top: 18px;">
               <div style="font-size: 11px; font-weight: 800; color: #166534; text-transform: uppercase; margin-bottom: 6px;">
                 ✓ Conformité Commerciale Client
@@ -493,8 +535,107 @@ window.EmailTemplates = (() => {
     return templateSubject.replace('[DATE]', `(${dateFormatted})`);
   }
 
+
+  async function generateAI() {
+    const pairId = document.getElementById('ai-pair-selector').value;
+    const example = document.getElementById('ai-example-text').value;
+    const apiKey = document.getElementById('ai-api-key').value;
+    
+    if (!apiKey) {
+      if(window.App) window.App.showToast('Veuillez entrer une clé API Gemini.', 'error');
+      return;
+    }
+    if (!example) {
+      if(window.App) window.App.showToast('Veuillez fournir un exemple d\'e-mail.', 'error');
+      return;
+    }
+    
+    // Save API key
+    localStorage.setItem('gemini_api_key', apiKey);
+    localStorage.setItem('ai_email_example', example);
+    
+    window.EmailTemplates.aiGeneratedContent = '<i>Génération en cours avec Gemini 1.5 Flash...</i>';
+    renderIframeContent();
+    if(window.App) window.App.showToast('Génération en cours...', 'info');
+
+    // Get current market context
+    const ds = window.PairDatasets ? window.PairDatasets.get(pairId) : null;
+    let contextStr = 'Context non disponible';
+    if (ds) {
+      contextStr = `
+Paire: ${pairId}
+Tendances récentes: ${ds.recentTrendsFr.join(', ')}
+Facteurs clés: ${ds.keyFactorsFr.join(', ')}
+A surveiller cette semaine: ${ds.toWatchFr.join(', ')}
+Scénario Haussier: ${ds.scenarios.bull.pointsFr.join(', ')}
+Scénario Baissier: ${ds.scenarios.bear.pointsFr.join(', ')}
+`;
+    }
+
+    const prompt = `Tu es un vendeur FX institutionnel (Corporate FX Sales) chez Revolut Business, écrivant à un directeur financier. 
+Voici un exemple de style et de structure de mail que tu dois absolument imiter : 
+\`\`\`
+${example}
+\`\`\`
+
+Voici le contexte de marché ACTUEL pour la paire ${pairId} :
+\`\`\`
+${contextStr}
+\`\`\`
+
+Consignes :
+1. Rédige un NOUVEL e-mail en te basant sur le contexte de marché ACTUEL.
+2. Adopte le MÊME TON, la MÊME STRUCTURE et le MÊME NIVEAU DE PROFESSIONNALISME que l'exemple fourni.
+3. NE DONNE AUCUN CONSEIL FINANCIER OU RECOMMANDATION D'INVESTISSEMENT. Reste factuel.
+4. Génère uniquement le corps du mail en HTML (utiliser des balises <p>, <ul>, <strong>, etc.) sans les balises \`\`\`html.`;
+
+    try {
+      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.3 }
+        })
+      });
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+      
+      let htmlContent = data.candidates[0].content.parts[0].text;
+      // Remove potential markdown wrappers
+      htmlContent = htmlContent.replace(/\`\`\`html/g, '').replace(/\`\`\`/g, '');
+      
+      window.EmailTemplates.aiGeneratedContent = htmlContent;
+      renderIframeContent();
+      if(window.App) window.App.showToast('E-mail généré avec succès !', 'success');
+      
+    } catch (e) {
+      console.error(e);
+      window.EmailTemplates.aiGeneratedContent = '<i style="color: red;">Erreur lors de la génération: ' + e.message + '</i>';
+      renderIframeContent();
+      if(window.App) window.App.showToast('Erreur API Gemini', 'error');
+    }
+  }
+
+  // Restore saved values when rendering
+  function restoreAIFields() {
+    setTimeout(() => {
+      const apiKeyInput = document.getElementById('ai-api-key');
+      const exampleInput = document.getElementById('ai-example-text');
+      if (apiKeyInput && localStorage.getItem('gemini_api_key')) {
+        apiKeyInput.value = localStorage.getItem('gemini_api_key');
+      }
+      if (exampleInput && localStorage.getItem('ai_email_example')) {
+        exampleInput.value = localStorage.getItem('ai_email_example');
+      }
+    }, 100);
+  }
+
   function initPage() {
     renderIframeContent();
+    restoreAIFields();
   }
 
   function renderIframeContent() {
@@ -519,6 +660,7 @@ window.EmailTemplates = (() => {
     if (contentArea) {
       contentArea.innerHTML = renderEmailTemplatesPage();
       renderIframeContent();
+      restoreAIFields();
     }
   }
 
@@ -590,6 +732,7 @@ window.EmailTemplates = (() => {
     generateEmailHTML,
     copyRichText,
     copyPlainText,
-    copySubject
+    copySubject,
+    generateAI
   };
 })();
