@@ -287,6 +287,19 @@ window.PairFocus = (() => {
           pairData.rate = d[pairKey].formattedPrice;
           pairData.d1 = d[pairKey].d1 + ' (1J)';
           pairData.w1 = d[pairKey].w1 + ' (1S)';
+          if (d[pairKey].history) {
+            pairData.history = d[pairKey].history;
+          }
+        }
+        
+        if (json.calendar && json.calendar.length > 0) {
+          const pairCurrencies = pairKey.split('/');
+          const relevantEvents = json.calendar.filter(ev => pairCurrencies.includes(ev.country) || ev.country === 'All');
+          if (relevantEvents.length > 0) {
+            const getImpactIcon = (impact) => impact === 'High' ? '🔴' : '🟠';
+            pairData.toWatchFr = relevantEvents.slice(0, 5).map(ev => `${getImpactIcon(ev.impact)} ${ev.country} : ${ev.title}`);
+            pairData.toWatchEn = relevantEvents.slice(0, 5).map(ev => `${getImpactIcon(ev.impact)} ${ev.country}: ${ev.title}`);
+          }
         }
 
         const now = new Date();
@@ -337,6 +350,34 @@ window.PairFocus = (() => {
   }
 
   function renderSparklineSVG() {
+    let polyPoints = "5,18 45,26 80,22 120,40 160,45 195,58 235,52";
+    let lastX = 235, lastY = 52;
+    
+    if (pairData.history && pairData.history.length >= 2) {
+      const data = pairData.history;
+      const min = Math.min(...data);
+      const max = Math.max(...data);
+      const range = (max - min) === 0 ? 1 : max - min;
+      
+      const pad = 5;
+      const width = 230;
+      const height = 60;
+      
+      const stepX = width / (data.length - 1);
+      
+      let points = [];
+      data.forEach((val, i) => {
+        const x = pad + (i * stepX);
+        const y = pad + (height - ((val - min) / range) * height);
+        points.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+      });
+      
+      polyPoints = points.join(' ');
+      const lastPoint = points[points.length - 1].split(',');
+      lastX = parseFloat(lastPoint[0]);
+      lastY = parseFloat(lastPoint[1]);
+    }
+
     return `
       <svg viewBox="0 0 240 70" style="width: 100%; height: 75px; display: block; overflow: visible;">
         <defs>
@@ -348,11 +389,11 @@ window.PairFocus = (() => {
         <line x1="0" y1="10" x2="240" y2="10" stroke="#f1f5f9" stroke-width="1"/>
         <line x1="0" y1="35" x2="240" y2="35" stroke="#f1f5f9" stroke-width="1"/>
         <line x1="0" y1="60" x2="240" y2="60" stroke="#f1f5f9" stroke-width="1"/>
-        <polygon points="5,18 45,26 80,22 120,40 160,45 195,58 235,52 235,68 5,68" fill="url(#grad-sparkline-pair)"/>
-        <polyline fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="5,18 45,26 80,22 120,40 160,45 195,58 235,52"/>
-        <circle cx="235" cy="52" r="3.5" fill="#1e40af"/>
-        <rect x="175" y="44" width="55" height="15" rx="3" fill="#1e40af"/>
-        <text x="202" y="55" fill="#ffffff" font-size="9" font-family="'JetBrains Mono', monospace" font-weight="bold" text-anchor="middle">${pairData.rate}</text>
+        <polygon points="${polyPoints} ${lastX},68 5,68" fill="url(#grad-sparkline-pair)"/>
+        <polyline fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="${polyPoints}"/>
+        <circle cx="${lastX}" cy="${lastY}" r="3.5" fill="#1e40af"/>
+        <rect x="${lastX - 45}" y="${lastY - 14}" width="50" height="13" rx="3" fill="#1e40af"/>
+        <text x="${lastX - 20}" y="${lastY - 5}" fill="#ffffff" font-size="8.5" font-family="'JetBrains Mono', monospace" font-weight="bold" text-anchor="middle">${pairData.rate}</text>
       </svg>
     `;
   }
