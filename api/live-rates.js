@@ -100,16 +100,15 @@ module.exports = async function(req, res) {
           
           if (meta.regularMarketPrice !== undefined) {
             const price = meta.regularMarketPrice;
-            const prevClose = meta.chartPreviousClose || quotes[quotes.length - 2] || price;
-            const close5d = quotes[0] || prevClose;
-            const closeYTD = close5d;
+            const cleanHistory = quotes.filter(q => q !== null);
+            
+            const prevClose = meta.regularMarketPreviousClose || meta.chartPreviousClose || cleanHistory[cleanHistory.length - 2] || price;
+            const close5d = cleanHistory[0] || prevClose;
+            const closeYTD = close5d; // To truly get YTD we would need a larger range, but keeping fallback
             
             const d1Pct = prevClose ? ((price - prevClose) / prevClose) * 100 : 0;
             const w1Pct = close5d ? ((price - close5d) / close5d) * 100 : 0;
             const ytdPct = closeYTD ? ((price - closeYTD) / closeYTD) * 100 : 0;
-            
-            // Clean up history array (remove nulls)
-            const cleanHistory = quotes.filter(q => q !== null);
 
             results[item.key] = {
               price,
