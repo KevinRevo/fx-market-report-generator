@@ -600,7 +600,7 @@ Consignes :
 2. Adopte le MÊME TON, la MÊME STRUCTURE et le MÊME NIVEAU DE PROFESSIONNALISME que l'exemple fourni.
 3. NE DONNE AUCUN CONSEIL FINANCIER OU RECOMMANDATION D'INVESTISSEMENT. Reste factuel.
 4. L'email DOIT IMPERATIVEMENT être rédigé en ${targetLang === 'en' ? 'ANGLAIS' : 'FRANÇAIS'}.
-5. Génère uniquement le corps du mail en HTML (utiliser des balises <p>, <ul>, <strong>, etc.) sans les balises ```html.`;
+5. Génère uniquement le corps du mail en HTML (utiliser des balises <p>, <ul>, <strong>, etc.) sans les balises \`\`\`html.`;
 
     try {
       const res = await fetch('https://fx-market-report-generator.vercel.app/api/generate-email', {
@@ -746,4 +746,5 @@ Consignes :
     generateAI
   };
 })();
+
 
