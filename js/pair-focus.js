@@ -296,9 +296,24 @@ window.PairFocus = (() => {
           const pairCurrencies = pairKey.split('/');
           const relevantEvents = json.calendar.filter(ev => pairCurrencies.includes(ev.country) || ev.country === 'All');
           if (relevantEvents.length > 0) {
-            const getImpactIcon = (impact) => impact === 'High' ? '🔴' : '🟠';
-            pairData.toWatchFr = relevantEvents.slice(0, 5).map(ev => `${getImpactIcon(ev.impact)} ${ev.country} : ${ev.title}`);
-            pairData.toWatchEn = relevantEvents.slice(0, 5).map(ev => `${getImpactIcon(ev.impact)} ${ev.country}: ${ev.title}`);
+            const formatEventDate = (dStr) => {
+              if(!dStr) return '';
+              const parts = dStr.split('-');
+              if(parts.length === 3) return `${parts[0]}/${parts[1]}`; // mm-dd-yyyy to dd/mm
+              return dStr;
+            };
+            
+            const eventObjs = relevantEvents.slice(0, 5).map(ev => ({
+              isObj: true,
+              country: ev.country,
+              title: ev.title,
+              impact: ev.impact,
+              dateStr: formatEventDate(ev.date),
+              time: ev.time || ''
+            }));
+            
+            pairData.toWatchFr = eventObjs;
+            pairData.toWatchEn = eventObjs;
           }
         }
 
@@ -827,9 +842,25 @@ window.PairFocus = (() => {
               <div>
                 ${renderSectionHeader('6', isFr ? 'À SURVEILLER' : 'CATALYSTS TO WATCH', isFr ? 'Les prochains catalyseurs' : 'Upcoming market drivers')}
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
-                  <ul style="margin: 0; padding-left: 14px; font-size: 8.5px; line-height: 1.4; color: #334155;">
-                    ${(isFr ? pairData.toWatchFr : pairData.toWatchEn).map(w => `<li style="margin-bottom: 3px;">${w}</li>`).join('')}
-                  </ul>
+                  <div style="display: flex; flex-direction: column; gap: 4px;">
+                    ${(isFr ? pairData.toWatchFr : pairData.toWatchEn).map(w => {
+                      if (w && w.isObj) {
+                        return `
+                        <div style="display: flex; align-items: center; background: ${w.impact === 'High' ? '#fee2e2' : '#ffedd5'}; padding: 4px 6px; border-radius: 4px; border-left: 3px solid ${w.impact === 'High' ? '#dc2626' : '#ea580c'};">
+                          <div style="font-weight: 800; color: ${w.impact === 'High' ? '#991b1b' : '#9a3412'}; font-size: 7.5px; width: 40px; text-align: center; border-right: 1px solid rgba(0,0,0,0.1); padding-right: 6px; margin-right: 6px;">
+                            <div style="font-size: 9px; margin-bottom: 1px;">${w.dateStr}</div>
+                            <div style="font-size: 7px; opacity: 0.8;">${w.time}</div>
+                          </div>
+                          <div style="font-weight: 800; font-size: 8px; color: ${w.impact === 'High' ? '#dc2626' : '#ea580c'}; margin-right: 6px; width: 22px;">${w.country}</div>
+                          <div style="font-size: 8px; color: #1e293b; font-weight: 600; line-height: 1.1; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.title}</div>
+                        </div>`;
+                      } else {
+                        return `<div style="font-size: 8.5px; color: #334155; margin-bottom: 2px; padding-left: 10px; position: relative;">
+                          <span style="position: absolute; left: 0; color: #3b82f6;">•</span> ${w}
+                        </div>`;
+                      }
+                    }).join('')}
+                  </div>
                 </div>
               </div>
 
