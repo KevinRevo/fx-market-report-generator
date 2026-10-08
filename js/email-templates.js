@@ -452,11 +452,11 @@ window.EmailTemplates = (() => {
             </div>
 
             ${selectedTemplateId === 'ai_generator' ? `
+            
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 16px;">
-              <h4 style="margin: 0 0 10px 0; font-size: 12px; color: #1e293b; text-transform: uppercase;">Paramètres IA</h4>
+              <h4 style="margin: 0 0 10px 0; font-size: 12px; color: #1e293b; text-transform: uppercase;">${currentLang === 'fr' ? 'Paramètres IA' : 'AI Parameters'}</h4>
               
-              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Paire de devises :</label>
-              
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? 'Paire de devises :' : 'Currency Pair:'}</label>
               <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 12px;">
               <select id="ai-base-ccy" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
                 <option value="EUR" selected>🇪🇺 EUR</option>
@@ -487,22 +487,19 @@ window.EmailTemplates = (() => {
               </select>
               </div>
 
-
-              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Votre exemple d'e-mail (Modèle) :</label>
-              <textarea id="ai-example-text" style="width: 100%; height: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px; resize: vertical;" placeholder="Collez ici un ancien e-mail que vous avez écrit pour donner à l'IA votre style et la structure attendue..."></textarea>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? "Votre exemple d'e-mail (Modèle) :" : 'Your example email (Template):'}</label>
+              <textarea id="ai-example-text" style="width: 100%; height: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px; resize: vertical;" placeholder="${currentLang === 'fr' ? 'Collez ici un ancien e-mail que vous avez écrit...' : 'Paste an old email you wrote here...'}"></textarea>
               
-              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Clé API Gemini (sauvegardée localement) :</label>
-              <input type="password" id="ai-api-key" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px;" placeholder="AIzaSy...">
-              
-                            <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Langue de l'e-mail :</label>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? "Langue de l'e-mail généré :" : 'Generated Email Language:'}</label>
               <select id="ai-language" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px;">
-                <option value="fr" selected>???? Fran�ais</option>
-                <option value="en">???? English</option>
+                <option value="fr" selected>🇫🇷 Français</option>
+                <option value="en">🇬🇧 English</option>
               </select>
-<button onclick="window.EmailTemplates.generateAI()" style="width: 100%; padding: 8px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
-                ✨ Générer l'e-mail avec l'IA
+
+              <button onclick="window.EmailTemplates.generateAI()" style="width: 100%; padding: 8px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                ✨ ${currentLang === 'fr' ? "Générer l'e-mail avec l'IA" : 'Generate Email with AI'}
               </button>
-              <div style="font-size: 9px; color: #94a3b8; margin-top: 6px; text-align: center;">Les données de marché actuelles seront automatiquement injectées.</div>
+              <div style="font-size: 9px; color: #94a3b8; margin-top: 6px; text-align: center;">${currentLang === 'fr' ? 'Les données de marché actuelles seront automatiquement injectées.' : 'Current market data will be automatically injected.'}</div>
             </div>
             ` : ''}
 
