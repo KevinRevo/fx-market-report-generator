@@ -873,7 +873,7 @@ window.PairFocus = (() => {
               <div style="font-size: 8px; color: #64748b; font-style: italic; margin-top: 4px; text-align: center;">
                 ${isFr 
                   ? 'Ces prévisions représentent des objectifs individuels de recherche et ne constituent en aucun cas un consensus de marché.' 
-                  : 'Forecasts represent individual institutional research views and do not constitute market consensus.'}
+                  : 'Forecasts repèresent individual institutional research views and do not constitute market consensus.'}
               </div>
             </div>
 
@@ -923,7 +923,7 @@ window.PairFocus = (() => {
               </div>
 
               <div>
-                ${renderSectionHeader('7', isFr ? 'LECTURE COMMERCIALE' : 'COMMERCIAL READING', isFr ? 'Clés de lecture des évènements à venir' : 'Key takeaways for upcoming events')}
+                ${renderSectionHeader('7', isFr ? 'LECTURE COMMERCIALE' : 'COMMERCIAL READING', isFr ? 'Clés de lecture des évènements àà venir' : 'Key takeaways for upcoming events')}
                 <div style="display: flex; flex-direction: column; gap: 6px;">
                   ${(() => {
                     const events = (isFr ? pairData.toWatchFr : pairData.toWatchEn).filter(w => w && w.isObj).slice(0, 3);
@@ -941,7 +941,7 @@ window.PairFocus = (() => {
                     } else {
                       return `
                         <div style="background: #f0fdf4; border-left: 3px solid #16a34a; padding: 8px 10px; border-radius: 0 4px 4px 0; margin-bottom: 6px;">
-                          <div style="font-size: 9.5px; font-weight: 700; color: #166534;">${isFr ? 'Vendeur de devises (USD)' : 'Currency Seller (USD)'}</div>
+                          <div style="font-size: 9.5px; font-weight: 700; color: #166534;">${isFr ? isFr ? 'Vendeur' : 'Seller' : 'Seller'}</div>
                           <div style="font-size: 8.5px; color: #334155; margin-top: 2px;">${inject(isFr ? pairData.commercialReading.sellerFr : pairData.commercialReading.sellerEn)}</div>
                         </div>
                         <div style="background: #fef2f2; border-left: 3px solid #dc2626; padding: 8px 10px; border-radius: 0 4px 4px 0;">
