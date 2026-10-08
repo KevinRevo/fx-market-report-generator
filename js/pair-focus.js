@@ -376,6 +376,57 @@ window.PairFocus = (() => {
     refreshView();
   }
 
+  
+  const CCY_FLAGS = {"EUR":"🇪🇺","USD":"🇺🇸","GBP":"🇬🇧","CHF":"🇨🇭","NOK":"🇳🇴","SEK":"🇸🇪","DKK":"🇩🇰","RON":"🇷🇴","CZK":"🇨🇿","HUF":"🇭🇺","PLN":"🇵🇱"};
+
+  function buildGenericDataset(base, quote) {
+    return {
+      subFr: `Dynamique croisée ${base}/${quote}`,
+      subEn: `Cross dynamics ${base}/${quote}`,
+      recentTrendsFr: [`Analyse technique en cours sur ${base}/${quote}`, `Suivi des flux interbancaires`],
+      recentTrendsEn: [`Technical analysis ongoing for ${base}/${quote}`, `Monitoring interbank flows`],
+      keyFactorsFr: [`Différentiel de taux d'intérêt`, `Indicateurs macroéconomiques locaux`],
+      keyFactorsEn: [`Interest rate differential`, `Local macroeconomic indicators`],
+      drivers: {
+        fed: { titleFr: `Banque Centrale (${base})`, titleEn: `Central Bank (${base})`, flag: CCY_FLAGS[base]||'🏦', pointsFr: [`Politique monétaire locale`], pointsEn: [`Local monetary policy`] },
+        bce: { titleFr: `Banque Centrale (${quote})`, titleEn: `Central Bank (${quote})`, flag: CCY_FLAGS[quote]||'🏦', pointsFr: [`Politique monétaire locale`], pointsEn: [`Local monetary policy`] },
+        yields: { titleFr: 'Rendements & Taux', titleEn: 'Yields & Rates', flag: '📊', pointsFr: ['Écart de rendement'], pointsEn: ['Yield spread'] },
+        geopolitics: { titleFr: 'Risque Global', titleEn: 'Global Risk', flag: '🌍', pointsFr: ['Sentiment de marché'], pointsEn: ['Market sentiment'] }
+      },
+      scenarios: {
+        bull: { titleFr: `Scénario haussier (${base}/${quote} ↑)`, titleEn: `Bullish (${base}/${quote} ↑)`, pointsFr: [`Surperformance du ${base}`], pointsEn: [`${base} outperformance`], targetFr: 'Objectif {bullR}', targetEn: 'Target {bullR}' },
+        central: { titleFr: `Scénario central (Range)`, titleEn: `Central (Range)`, pointsFr: [`Équilibre des forces`], pointsEn: [`Balance of forces`], targetFr: 'Autour de {cenR}', targetEn: 'Around {cenR}' },
+        bear: { titleFr: `Scénario baissier (${base}/${quote} ↓)`, titleEn: `Bearish (${base}/${quote} ↓)`, pointsFr: [`Sous-performance du ${base}`], pointsEn: [`${base} underperformance`], targetFr: 'Objectif {bearR}', targetEn: 'Target {bearR}' }
+      },
+      banksTitleFr: 'VUES INSTITUTIONNELLES', banksTitleEn: 'INSTITUTIONAL VIEWS',
+      banksSubFr: 'Analyse des conditions de marché', banksSubEn: 'Market conditions analysis',
+      bankViews: [
+        { name: `Marché ${base}`, logo: CCY_FLAGS[base]||'🏦', pointsFr: [`Suivi macroéconomique`], pointsEn: [`Macro tracking`] },
+        { name: `Marché ${quote}`, logo: CCY_FLAGS[quote]||'🏦', pointsFr: [`Suivi macroéconomique`], pointsEn: [`Macro tracking`] }
+      ],
+      toWatchFr: [`Données économiques ${base}`, `Données économiques ${quote}`],
+      toWatchEn: [`${base} economic data`, `${quote} economic data`],
+      commercialReading: {
+        sellerFr: `Vendeur de ${base} : surveiller la zone haute {bullR} comme repère de conversion en ${quote}.`,
+        sellerEn: `${base} seller: monitor the upper {bullR} zone as a ${quote} conversion benchmark.`,
+        buyerFr: `Acheteur de ${base} : surveiller la zone basse {bearR} comme repère d'achat contre ${quote}.`,
+        buyerEn: `${base} buyer: monitor the lower {bearR} zone as a benchmark against ${quote}.`
+      },
+      sourcesText: 'Reuters, TradingView, Banques Centrales'
+    };
+  }
+
+  
+  function selectCustomPair() {
+    const base = document.getElementById('base-ccy').value;
+    const quote = document.getElementById('quote-ccy').value;
+    if (base === quote) {
+      App.showToast('Veuillez sélectionner deux devises différentes', 'error');
+      return;
+    }
+    selectPair(base + quote);
+  }
+
   function selectPair(pairId) {
     currentPairId = pairId;
     
@@ -398,6 +449,8 @@ window.PairFocus = (() => {
       }
     }
     
+    document.getElementById('base-ccy').value = 'EUR';
+    document.getElementById('quote-ccy').value = 'USD';
     syncPairRate();
   }
 
@@ -1006,13 +1059,37 @@ window.PairFocus = (() => {
             <h3>Pair Focus & Institutional Forecasts</h3>
 
             <!-- Pair Selector -->
-            <select id="pair-selector" class="pair-select-dropdown" onchange="PairFocus.selectPair(this.value)">
-              ${SUPPORTED_PAIRS.map(p => `
-                <option value="${p.id}" ${p.id === currentPairId ? 'selected' : ''}>
-                  ${p.flags} ${p.name}
-                </option>
-              `).join('')}
-            </select>
+            
+            <div style="display: flex; gap: 4px; align-items: center;">
+              <select id="base-ccy" class="pair-select-dropdown" onchange="PairFocus.selectCustomPair()" style="width: 80px; padding-right: 2px;">
+                <option value="EUR" selected>🇪🇺 EUR</option>
+                <option value="USD">🇺🇸 USD</option>
+                <option value="GBP">🇬🇧 GBP</option>
+                <option value="CHF">🇨🇭 CHF</option>
+                <option value="NOK">🇳🇴 NOK</option>
+                <option value="SEK">🇸🇪 SEK</option>
+                <option value="DKK">🇩🇰 DKK</option>
+                <option value="RON">🇷🇴 RON</option>
+                <option value="CZK">🇨🇿 CZK</option>
+                <option value="HUF">🇭🇺 HUF</option>
+                <option value="PLN">🇵🇱 PLN</option>
+              </select>
+              <span style="font-weight: 800; color: #1e293b;">/</span>
+              <select id="quote-ccy" class="pair-select-dropdown" onchange="PairFocus.selectCustomPair()" style="width: 80px; padding-right: 2px;">
+                <option value="EUR">🇪🇺 EUR</option>
+                <option value="USD" selected>🇺🇸 USD</option>
+                <option value="GBP">🇬🇧 GBP</option>
+                <option value="CHF">🇨🇭 CHF</option>
+                <option value="NOK">🇳🇴 NOK</option>
+                <option value="SEK">🇸🇪 SEK</option>
+                <option value="DKK">🇩🇰 DKK</option>
+                <option value="RON">🇷🇴 RON</option>
+                <option value="CZK">🇨🇿 CZK</option>
+                <option value="HUF">🇭🇺 HUF</option>
+                <option value="PLN">🇵🇱 PLN</option>
+              </select>
+            </div>
+
 
             <!-- Date Picker for ANY day -->
             <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 4px 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
@@ -1153,6 +1230,7 @@ window.PairFocus = (() => {
     renderPairFocusPage,
     initPage,
     selectPair,
+    selectCustomPair,
     setDate,
     setLanguage,
     syncPairRate,
