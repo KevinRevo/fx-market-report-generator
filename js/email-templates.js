@@ -456,15 +456,37 @@ window.EmailTemplates = (() => {
               <h4 style="margin: 0 0 10px 0; font-size: 12px; color: #1e293b; text-transform: uppercase;">Paramètres IA</h4>
               
               <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Paire de devises :</label>
-              <select id="ai-pair-selector" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px;">
-                <option value="EURUSD">EUR/USD</option>
-                <option value="EURCHF">EUR/CHF</option>
-                <option value="CHFUSD">CHF/USD</option>
-                <option value="CZKUSD">CZK/USD</option>
-                <option value="USDHUF">USD/HUF</option>
-                <option value="EURPLN">EUR/PLN</option>
-                <option value="USDPLN">USD/PLN</option>
+              
+              <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 12px;">
+              <select id="ai-base-ccy" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
+                <option value="EUR" selected>🇪🇺 EUR</option>
+                <option value="USD">🇺🇸 USD</option>
+                <option value="GBP">🇬🇧 GBP</option>
+                <option value="CHF">🇨🇭 CHF</option>
+                <option value="NOK">🇳🇴 NOK</option>
+                <option value="SEK">🇸🇪 SEK</option>
+                <option value="DKK">🇩🇰 DKK</option>
+                <option value="RON">🇷🇴 RON</option>
+                <option value="CZK">🇨🇿 CZK</option>
+                <option value="HUF">🇭🇺 HUF</option>
+                <option value="PLN">🇵🇱 PLN</option>
               </select>
+              <span style="font-weight: 800; color: #1e293b;">/</span>
+              <select id="ai-quote-ccy" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
+                <option value="EUR">🇪🇺 EUR</option>
+                <option value="USD" selected>🇺🇸 USD</option>
+                <option value="GBP">🇬🇧 GBP</option>
+                <option value="CHF">🇨🇭 CHF</option>
+                <option value="NOK">🇳🇴 NOK</option>
+                <option value="SEK">🇸🇪 SEK</option>
+                <option value="DKK">🇩🇰 DKK</option>
+                <option value="RON">🇷🇴 RON</option>
+                <option value="CZK">🇨🇿 CZK</option>
+                <option value="HUF">🇭🇺 HUF</option>
+                <option value="PLN">🇵🇱 PLN</option>
+              </select>
+              </div>
+
 
               <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Votre exemple d'e-mail (Modèle) :</label>
               <textarea id="ai-example-text" style="width: 100%; height: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px; resize: vertical;" placeholder="Collez ici un ancien e-mail que vous avez écrit pour donner à l'IA votre style et la structure attendue..."></textarea>
@@ -537,21 +559,18 @@ window.EmailTemplates = (() => {
 
 
   async function generateAI() {
-    const pairId = document.getElementById('ai-pair-selector').value;
+    const pairId = document.getElementById('ai-base-ccy').value + document.getElementById('ai-quote-ccy').value;
     const example = document.getElementById('ai-example-text').value;
-    const apiKey = document.getElementById('ai-api-key').value;
     
-    if (!apiKey) {
-      if(window.App) window.App.showToast('Veuillez entrer une clé API Gemini.', 'error');
-      return;
-    }
+    
+
     if (!example) {
       if(window.App) window.App.showToast('Veuillez fournir un exemple d\'e-mail.', 'error');
       return;
     }
     
     // Save API key
-    localStorage.setItem('gemini_api_key', apiKey);
+    
     localStorage.setItem('ai_email_example', example);
     
     window.EmailTemplates.aiGeneratedContent = '<i>Génération en cours avec Gemini 1.5 Flash...</i>';
@@ -590,20 +609,17 @@ Consignes :
 4. Génère uniquement le corps du mail en HTML (utiliser des balises <p>, <ul>, <strong>, etc.) sans les balises \`\`\`html.`;
 
     try {
-      const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey, {
+      const res = await fetch('https://fx-market-report-generator.vercel.app/api/generate-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { temperature: 0.3 }
-        })
+        body: JSON.stringify({ prompt })
       });
       const data = await res.json();
       if (data.error) {
         throw new Error(data.error.message);
       }
       
-      let htmlContent = data.candidates[0].content.parts[0].text;
+      let htmlContent = data.content;
       // Remove potential markdown wrappers
       htmlContent = htmlContent.replace(/\`\`\`html/g, '').replace(/\`\`\`/g, '');
       
