@@ -63,8 +63,11 @@ function fetchCalendar() {
              const country = (ev.match(/<country>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/country>/) || [])[1];
              const title = (ev.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1];
              const impact = (ev.match(/<impact>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/impact>/) || [])[1];
+             const dateStr = (ev.match(/<date>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/date>/) || [])[1];
+             const timeStr = (ev.match(/<time>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/time>/) || [])[1];
+             
              if (impact === 'High' || impact === 'Medium') {
-               events.push({ country, title, impact });
+               events.push({ country, title, impact, date: dateStr, time: timeStr });
              }
           });
           resolve(events);
