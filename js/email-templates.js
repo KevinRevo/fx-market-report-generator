@@ -494,27 +494,19 @@ window.EmailTemplates = (() => {
               <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Clé API Gemini (sauvegardée localement) :</label>
               <input type="password" id="ai-api-key" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px;" placeholder="AIzaSy...">
               
-              <button onclick="window.EmailTemplates.generateAI()" style="width: 100%; padding: 8px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
+                            <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">Langue de l'e-mail :</label>
+              <select id="ai-language" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px;">
+                <option value="fr" selected>???? Fran�ais</option>
+                <option value="en">???? English</option>
+              </select>
+<button onclick="window.EmailTemplates.generateAI()" style="width: 100%; padding: 8px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
                 ✨ Générer l'e-mail avec l'IA
               </button>
               <div style="font-size: 9px; color: #94a3b8; margin-top: 6px; text-align: center;">Les données de marché actuelles seront automatiquement injectées.</div>
             </div>
             ` : ''}
 
-            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px; margin-top: 18px;">
-              <div style="font-size: 11px; font-weight: 800; color: #166534; text-transform: uppercase; margin-bottom: 6px;">
-                ✓ Conformité Commerciale Client
-              </div>
-              <ul style="margin: 0; padding-left: 14px; font-size: 10px; line-height: 1.45; color: #166534;">
-                <li>S'adresse directement aux DAFs / Trésoriers</li>
-                <li>Zéro conseil financier — 100% factuel</li>
-                <li>Mise en valeur des solutions Revolut Business</li>
-                <li>Prêt à envoyer en 1 clic</li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Right: Live Email Preview -->
+            </div><!-- Right: Live Email Preview -->
           <div class="email-preview-column">
             <!-- Subject Line Bar -->
             <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
@@ -561,6 +553,7 @@ window.EmailTemplates = (() => {
   async function generateAI() {
     const pairId = document.getElementById('ai-base-ccy').value + document.getElementById('ai-quote-ccy').value;
     const example = document.getElementById('ai-example-text').value;
+    const targetLang = document.getElementById('ai-language') ? document.getElementById('ai-language').value : 'fr';
     
     
 
@@ -606,7 +599,8 @@ Consignes :
 1. Rédige un NOUVEL e-mail en te basant sur le contexte de marché ACTUEL.
 2. Adopte le MÊME TON, la MÊME STRUCTURE et le MÊME NIVEAU DE PROFESSIONNALISME que l'exemple fourni.
 3. NE DONNE AUCUN CONSEIL FINANCIER OU RECOMMANDATION D'INVESTISSEMENT. Reste factuel.
-4. Génère uniquement le corps du mail en HTML (utiliser des balises <p>, <ul>, <strong>, etc.) sans les balises \`\`\`html.`;
+4. L'email DOIT IMPERATIVEMENT être rédigé en ${targetLang === 'en' ? 'ANGLAIS' : 'FRANÇAIS'}.
+5. Génère uniquement le corps du mail en HTML (utiliser des balises <p>, <ul>, <strong>, etc.) sans les balises ```html.`;
 
     try {
       const res = await fetch('https://fx-market-report-generator.vercel.app/api/generate-email', {
@@ -752,3 +746,4 @@ Consignes :
     generateAI
   };
 })();
+
