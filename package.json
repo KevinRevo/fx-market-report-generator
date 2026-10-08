@@ -1,0 +1,10 @@
+{
+  "name": "fx-market-report-generator",
+  "version": "1.0.0",
+  "description": "API for FX Market Report Generator",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}
