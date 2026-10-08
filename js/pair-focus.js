@@ -292,9 +292,27 @@ window.PairFocus = (() => {
           }
         }
         
-        if (json.calendar && json.calendar.length > 0) {
+        // Auto-generate "To Watch" from calendar via allorigins
+        try {
+          const calRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://nfs.faireconomy.media/ff_calendar_thisweek.xml'));
+          const xmlData = await calRes.text();
+          
+          const events = [];
+          const eventMatches = xmlData.match(/<event>([\s\S]*?)<\/event>/g) || [];
+          eventMatches.forEach(ev => {
+             const country = (ev.match(/<country>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/country>/) || [])[1];
+             const title = (ev.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1];
+             const impact = (ev.match(/<impact>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/impact>/) || [])[1];
+             const dateStr = (ev.match(/<date>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/date>/) || [])[1];
+             const timeStr = (ev.match(/<time>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/time>/) || [])[1];
+             
+             if (impact === 'High' || impact === 'Medium') {
+               events.push({ country, title, impact, date: dateStr, time: timeStr });
+             }
+          });
+
           const pairCurrencies = pairKey.split('/');
-          const relevantEvents = json.calendar.filter(ev => pairCurrencies.includes(ev.country) || ev.country === 'All');
+          const relevantEvents = events.filter(ev => pairCurrencies.includes(ev.country) || ev.country === 'All');
           if (relevantEvents.length > 0) {
             const formatEventDate = (dStr) => {
               if(!dStr) return '';
@@ -315,6 +333,8 @@ window.PairFocus = (() => {
             pairData.toWatchFr = eventObjs;
             pairData.toWatchEn = eventObjs;
           }
+        } catch (e) {
+          console.warn('Calendar fetch error:', e);
         }
 
         const now = new Date();
