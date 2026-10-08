@@ -288,7 +288,7 @@ window.DailyReport = (() => {
     App.showToast(currentLang === 'fr' ? 'Connexion aux flux interbancaires en direct (TradingView / Interbank)...' : 'Connecting to live interbank feeds (TradingView / Interbank)...', 'info', 3000);
 
     try {
-      const res = await fetch('/api/live-rates');
+      const res = await fetch('https://fx-market-report-generator.vercel.app/api/live-rates');
       const json = await res.json();
 
       if (json.success && json.data) {
