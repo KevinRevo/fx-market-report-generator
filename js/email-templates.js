@@ -522,33 +522,33 @@ window.EmailTemplates = (() => {
               
               <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? 'Paire de devises ciblée :' : 'Target Currency Pair:'}</label>
               <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 12px;">
-              <select id="ai-base-ccy" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
-                <option value="EUR" selected>🇪🇺 EUR</option>
-                <option value="USD">🇺🇸 USD</option>
-                <option value="GBP">🇬🇧 GBP</option>
-                <option value="CHF">🇨🇭 CHF</option>
-                <option value="NOK">🇳🇴 NOK</option>
-                <option value="SEK">🇸🇪 SEK</option>
-                <option value="DKK">🇩🇰 DKK</option>
-                <option value="RON">🇷🇴 RON</option>
-                <option value="CZK">🇨🇿 CZK</option>
-                <option value="HUF">🇭🇺 HUF</option>
-                <option value="PLN">🇵🇱 PLN</option>
-              </select>
-              <span style="font-weight: 800; color: #1e293b;">/</span>
-              <select id="ai-quote-ccy" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
-                <option value="EUR">🇪🇺 EUR</option>
-                <option value="USD" selected>🇺🇸 USD</option>
-                <option value="GBP">🇬🇧 GBP</option>
-                <option value="CHF">🇨🇭 CHF</option>
-                <option value="NOK">🇳🇴 NOK</option>
-                <option value="SEK">🇸🇪 SEK</option>
-                <option value="DKK">🇩🇰 DKK</option>
-                <option value="RON">🇷🇴 RON</option>
-                <option value="CZK">🇨🇿 CZK</option>
-                <option value="HUF">🇭🇺 HUF</option>
-                <option value="PLN">🇵🇱 PLN</option>
-              </select>
+                <select id="ai-base-ccy" style="flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 700;">
+                  <option value="EUR" selected>🇪🇺 EUR</option>
+                  <option value="USD">🇺🇸 USD</option>
+                  <option value="GBP">🇬🇧 GBP</option>
+                  <option value="CHF">🇨🇭 CHF</option>
+                  <option value="NOK">🇳🇴 NOK</option>
+                  <option value="SEK">🇸🇪 SEK</option>
+                  <option value="DKK">🇩🇰 DKK</option>
+                  <option value="RON">🇷🇴 RON</option>
+                  <option value="CZK">🇨🇿 CZK</option>
+                  <option value="HUF">🇭🇺 HUF</option>
+                  <option value="PLN">🇵🇱 PLN</option>
+                </select>
+                <button type="button" onclick="EmailTemplates.swapCurrencies()" title="Inverser les devises" style="padding: 5px 8px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 4px; font-weight: 800; color: #1e40af; cursor: pointer;">⇄</button>
+                <select id="ai-quote-ccy" style="flex: 1; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 700;">
+                  <option value="EUR">🇪🇺 EUR</option>
+                  <option value="USD" selected>🇺🇸 USD</option>
+                  <option value="GBP">🇬🇧 GBP</option>
+                  <option value="CHF">🇨🇭 CHF</option>
+                  <option value="NOK">🇳🇴 NOK</option>
+                  <option value="SEK">🇸🇪 SEK</option>
+                  <option value="DKK">🇩🇰 DKK</option>
+                  <option value="RON">🇷🇴 RON</option>
+                  <option value="CZK">🇨🇿 CZK</option>
+                  <option value="HUF">🇭🇺 HUF</option>
+                  <option value="PLN">🇵🇱 PLN</option>
+                </select>
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
@@ -937,6 +937,16 @@ window.EmailTemplates = (() => {
     return tmp.innerText || tmp.textContent || '';
   }
 
+  function swapCurrencies() {
+    const baseEl = document.getElementById('ai-base-ccy');
+    const quoteEl = document.getElementById('ai-quote-ccy');
+    if (baseEl && quoteEl) {
+      const temp = baseEl.value;
+      baseEl.value = quoteEl.value;
+      quoteEl.value = temp;
+    }
+  }
+
   return {
     renderEmailTemplatesPage,
     initPage,
@@ -948,6 +958,7 @@ window.EmailTemplates = (() => {
     copySubject,
     generateAI,
     loadPreset,
+    swapCurrencies,
     OUTREACH_PRESETS
   };
 })();
