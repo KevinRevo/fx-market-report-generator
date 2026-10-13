@@ -14,7 +14,62 @@ window.EmailTemplates = (() => {
   'use strict';
 
   let currentLang = 'fr'; // 'fr' or 'en'
-  let selectedTemplateId = 'daily_summary';
+  let selectedTemplateId = 'ai_generator';
+
+  const OUTREACH_PRESETS = [
+  {
+    "id": "fr_eurusd_1",
+    "nameFr": "🇫🇷 EUR/USD : Sécurisation des marges & dettes souveraines",
+    "nameEn": "🇫🇷 EUR/USD: Margin Protection & Sovereign Risk",
+    "base": "EUR",
+    "quote": "USD",
+    "lang": "fr",
+    "subject": "EUR/USD proche des 1,1200 : Sécurisez vos coûts en Dollar face au repli de l'Euro",
+    "text": "Bonjour [Nom du client],\n\nJ'espère que vous allez bien et que vous passez un bon début de semaine.\n\nJe me permets de vous contacter alors que les marchés ouvrent sous une pression marquée sur la monnaie unique, la parité EUR/USD évoluant autour de 1,1203 sous l'effet combiné des facteurs monétaires et budgétaires :\n● Tensions sur les dettes souveraines européennes : L'écart de rendement obligataire et les incertitudes budgétaires en Zone Euro (notamment en France) pèsent sur l'Euro.\n● Divergence monétaire Fed / BCE : Le maintien de taux élevés aux États-Unis (3,75 % - 4,00 %) face au taux de dépôt de la BCE (2,50 %) continue de favoriser le Dollar à court et moyen terme.\n\nQuel impact pour votre entreprise ?\nSi vous effectuez des règlements en USD à vos fournisseurs ou encaissez des devises dans les prochains mois, ce repli marqué de l'Euro risque d'alourdir vos coûts d'importation et d'impacter vos marges du T4 2026 et T1 2027.\n\nComment protéger vos marges avec Revolut Business ?\nGrâce à notre solution de couverture de change, vous pouvez :\n1. Verrouiller dès aujourd'hui vos cours de change jusqu'à 12 mois à l'avance.\n2. Bénéficier d'une flexibilité totale sur les dates d'exécution et de tirage de vos fonds.\n3. Garantir vos budgets d'achat pour le T4 2026 et le T1 2027 face aux fluctuations des marchés.\n\nSeriez-vous disponible pour un court échange de 10 minutes en début de semaine afin de modéliser votre exposition en USD ?\nVous pouvez choisir directement le créneau qui vous convient : [Insérer le lien Google Calendar]\n\nBien cordialement,\n[Nom du Sales / Spécialiste]\nRevolut Business"
+  },
+  {
+    "id": "fr_eurusd_2",
+    "nameFr": "🇫🇷 EUR/USD : Anticipation budgétaire T4 & Volatilité pétrole",
+    "nameEn": "🇫🇷 EUR/USD: Q4 Budget Hedging & Oil Volatility",
+    "base": "EUR",
+    "quote": "USD",
+    "lang": "fr",
+    "subject": "Briefing FX : Stratégie de couverture EUR/USD face aux plus bas récents de l'Euro",
+    "text": "Bonjour [Nom du client],\n\nJ'espère que vous allez bien.\n\nLa parité EUR/USD aborde cette nouvelle semaine autour de 1,1203, confirmant la nette fermeté du Dollar face à l'Euro :\n● Rendements US soutenus : La fermeté des rendements obligataires américains continue d'attirer les capitaux vers le Dollar.\n● Risque d'inflation sur les approvisionnements : Les cours élevés du pétrole (plus de 107 $/bbl) entretiennent la pression sur les marges des entreprises importatrices de la Zone Euro.\n\nEn période de divergence monétaire et de volatilité des devises, laisser vos flux commerciaux exposés au cours spot fait peser un risque direct sur votre rentabilité.\n\nAvec la couverture de change Revolut Business, vous fixez à l'avance votre cours EUR/USD pour l'ensemble de vos échéances commerciales futures, assurant une sérénité budgétaire totale.\n\nAuriez-vous 10 minutes à me consacrer cette semaine pour faire un point rapide sur vos volumes en devises ?\nRéservez directement un créneau dans mon agenda : [Insérer le lien Google Calendar]\n\nBien cordialement,\n[Nom du Sales / Spécialiste]\nRevolut Business"
+  },
+  {
+    "id": "en_eurusd_pln",
+    "nameFr": "🇬🇧 EUR/USD & USD/PLN : Euro Fiscal Headwinds & Q4 Forwards",
+    "nameEn": "🇬🇧 EUR/USD & USD/PLN: Euro Fiscal Headwinds & Q4 Forwards",
+    "base": "EUR",
+    "quote": "USD",
+    "lang": "en",
+    "subject": "Market Briefing: EUR/USD tests 1.1200 as fiscal risks weigh on Euro — Q4 FX Forwards",
+    "text": "Hi [Client Name],\n\nI hope you’re having a great start to your week.\n\nAs we open the new trading week, we are tracking key developments across European currency corridors that directly impact cross-border corporate cash flows heading into Q4:\n● EUR/USD Under Pressure (1.1203): The Euro remains constrained near 17-month lows as rising borrowing costs in France and broader European fiscal uncertainty add a risk premium over the single currency, compounding the Fed-ECB rate gap.\n● USD/PLN Surge (3.8920) & EUR/PLN (4.3850): The Greenback maintains strong upward momentum against regional currencies, driven by US Treasury yield advantages and persistent European energy import costs.\n\nStrategic Implication for Your Business:\nUnhedged foreign currency payables in USD or receivables in EUR/PLN over Q4 2026 and Q1 2027 face heightened margin volatility as European fiscal headlines diverge from US monetary strength.\n\nHow Revolut Business can protect your margins:\nThrough our FX Forwards, you can lock in current exchange rates for up to 12 months with full execution flexibility, securing complete budget certainty for your upcoming commitments.\n\nWould you be open to a brief 10-minute catch-up early this week to review your active currency pairs and model a forward ladder for your cash flows?\nYou can choose a convenient slot directly on my calendar: [Insert Google Calendar Link]\n\nBest regards,\n[Sales / Specialist Name]\nRevolut Business"
+  },
+  {
+    "id": "en_eurchf",
+    "nameFr": "🇬🇧 EUR/CHF & CHF/EUR : Safe-Haven Demand & Bond Volatility",
+    "nameEn": "🇬🇧 EUR/CHF & CHF/EUR: Safe-Haven Demand & Bond Volatility",
+    "base": "EUR",
+    "quote": "CHF",
+    "lang": "en",
+    "subject": "CHF/EUR Briefing: Protecting operating margins amid European bond volatility",
+    "text": "Hi [Client Name],\n\nI hope you are well.\n\nI wanted to highlight key developments in the Swiss Franc, where persistent geopolitical risk sentiment and European bond market shifts continue to anchor EUR/CHF down near 0.9360:\n● Safe-Haven Inflows: Widening European sovereign yield spreads continue to drive institutional capital toward Swiss Franc assets as a structural hedge.\n● Central Bank Divergence: While the ECB holds its deposit rate at 2.50%, market demand for liquid CHF holdings across European supply chains remains heavy following recent US interest rate increases.\n\nImpact on your business:\nFor companies managing cross-border settlements between Switzerland and the Eurozone, sustained CHF strength increases import costs and reduces quarterly budget predictability.\n\nStrategic Next Step:\nBy establishing a flexible FX Forward strategy with Revolut Business, you can:\n1. Secure guaranteed exchange rates for your Q4 2026 and Q1 2027 CHF/EUR commitments.\n2. Protect your profit margins against sudden geopolitical and fiscal market shifts.\n3. Draw down funds flexibly as operational cash flows require.\n\nAre you available for a brief call early this week to review your current CHF exposure?\nFeel free to select a time here: [Insert Google Calendar Link]\n\nBest regards,\n[Sales / Specialist Name]\nRevolut Business"
+  },
+  {
+    "id": "en_czk_pln",
+    "nameFr": "🇬🇧 CZK/USD & EUR/PLN : CEE Regional Currency Hedging Post-Fed",
+    "nameEn": "🇬🇧 CZK/USD & EUR/PLN: CEE Regional Currency Hedging Post-Fed",
+    "base": "CZK",
+    "quote": "USD",
+    "lang": "en",
+    "subject": "CEE FX Briefing: Securing CZK & PLN rates ahead of Q4 trade flows",
+    "text": "Hi [Client Name],\n\nI hope you are having a productive morning.\n\nRegional currencies across Central and Eastern Europe (CEE) continue to adjust to US monetary policy tightening and sustained energy import costs at the start of Q4:\n● CZK/USD (0.0430): The Czech Koruna faces downside pressure as US policy rates (3.75%–4.00%) widen yield differentials in favor of the US Dollar.\n● EUR/PLN (4.3850): The Zloty remains supported by domestic interest rates (NBP at 5.75%), but faces headwinds from broader European energy import inflation.\n\nWhy act now?\nUnhedged foreign currency payables or receivables leave operating margins vulnerable to further policy rate divergence and energy market volatility over the final quarter.\n\nWith Revolut Business, you can lock in forward exchange rates for up to 12 months, securing your profit margins with total budget clarity.\n\nWould you be open to a 10-minute briefing this week to discuss tailored hedging structures for your CEE exposures?\nBook a time directly in my agenda: [Insert Google Calendar Link]\n\nBest regards,\n[Sales / Specialist Name]\nRevolut Business"
+  }
+];
+
+
 
   const LEGAL_DISCLAIMER = {
     fr: `Cette communication est fournie à titre strictement informatif par Revolut Business à destination de ses clients entreprises. Elle ne constitue en aucun cas un conseil en investissement, une incitation ou une recommandation personnalisée d'achat ou de vente d'instruments financiers ou de devises. Les opérations de change comportent des risques inhérents à la volatilité des marchés. Les cours indiqués sont indicatifs et issus de sources de marché vérifiables (Reuters, Bloomberg, BCE, TradingView).`,
@@ -454,9 +509,18 @@ window.EmailTemplates = (() => {
             ${selectedTemplateId === 'ai_generator' ? `
             
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-top: 16px;">
-              <h4 style="margin: 0 0 10px 0; font-size: 12px; color: #1e293b; text-transform: uppercase;">${currentLang === 'fr' ? 'Paramètres IA' : 'AI Parameters'}</h4>
+              <h4 style="margin: 0 0 10px 0; font-size: 12px; color: #1e293b; text-transform: uppercase;">${currentLang === 'fr' ? 'Générateur de Prospections FX' : 'FX Sales Outreach Generator'}</h4>
+
+              <!-- Quick Presets Selector -->
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">
+                ⚡ ${currentLang === 'fr' ? 'Modèles types de départ (Revolut Sales) :' : 'Sales Outreach Templates (Base):'}
+              </label>
+              <select id="ai-preset-select" onchange="EmailTemplates.loadPreset(this.value)" style="width: 100%; padding: 6px; border: 1px solid #93c5fd; background: #eff6ff; border-radius: 4px; font-size: 11px; font-weight: 600; color: #1e3a8a; margin-bottom: 12px;">
+                <option value="">-- ${currentLang === 'fr' ? 'Choisir un modèle commercial...' : 'Choose a sales template...'} --</option>
+                ${OUTREACH_PRESETS.map(p => `<option value="${p.id}">${currentLang === 'fr' ? p.nameFr : p.nameEn}</option>`).join('')}
+              </select>
               
-              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? 'Paire de devises :' : 'Currency Pair:'}</label>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? 'Paire de devises ciblée :' : 'Target Currency Pair:'}</label>
               <div style="display: flex; gap: 4px; align-items: center; margin-bottom: 12px;">
               <select id="ai-base-ccy" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px;">
                 <option value="EUR" selected>🇪🇺 EUR</option>
@@ -487,19 +551,24 @@ window.EmailTemplates = (() => {
               </select>
               </div>
 
-              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? "Votre exemple d'e-mail (Modèle) :" : 'Your example email (Template):'}</label>
-              <textarea id="ai-example-text" style="width: 100%; height: 120px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px; resize: vertical;" placeholder="${currentLang === 'fr' ? 'Collez ici un ancien e-mail que vous avez écrit...' : 'Paste an old email you wrote here...'}"></textarea>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="font-size: 11px; font-weight: 600; color: #475569;">${currentLang === 'fr' ? "Email modèle (Structure & Ton) :" : 'Email Template (Style & Structure):'}</label>
+                <button type="button" onclick="EmailTemplates.loadPreset('fr_eurusd_1')" style="font-size: 9.5px; background: none; border: none; color: #2563eb; cursor: pointer; text-decoration: underline; padding: 0;">${currentLang === 'fr' ? 'Réinitialiser' : 'Reset'}</button>
+              </div>
+              <textarea id="ai-example-text" style="width: 100%; height: 140px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; line-height: 1.4; margin-bottom: 12px; resize: vertical;" placeholder="${currentLang === 'fr' ? 'Choisissez un modèle ci-dessus ou collez le vôtre...' : 'Select a template above or paste your own...'}"></textarea>
               
-              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? "Langue de l'e-mail généré :" : 'Generated Email Language:'}</label>
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? "Langue de rédaction :" : 'Email Output Language:'}</label>
               <select id="ai-language" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px;">
                 <option value="fr" selected>🇫🇷 Français</option>
                 <option value="en">🇬🇧 English</option>
               </select>
 
-              <button onclick="window.EmailTemplates.generateAI()" style="width: 100%; padding: 8px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">
-                ✨ ${currentLang === 'fr' ? "Générer l'e-mail avec l'IA" : 'Generate Email with AI'}
+              <button onclick="window.EmailTemplates.generateAI()" style="width: 100%; padding: 10px; background: #2563eb; color: #fff; border: none; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                ✨ ${currentLang === 'fr' ? "Générer l'e-mail avec données du jour" : 'Generate Email with Live Market Context'}
               </button>
-              <div style="font-size: 9px; color: #94a3b8; margin-top: 6px; text-align: center;">${currentLang === 'fr' ? 'Les données de marché actuelles seront automatiquement injectées.' : 'Current market data will be automatically injected.'}</div>
+              <div style="font-size: 9px; color: #64748b; margin-top: 6px; text-align: center; line-height: 1.3;">
+                ${currentLang === 'fr' ? 'Le cours réel, la variation 1J/1S et le calendrier sont injectés pour la paire choisie.' : 'Live spot, 1D/1W changes and economic calendar are injected for the chosen pair.'}
+              </div>
             </div>
             ` : ''}
 
@@ -547,6 +616,21 @@ window.EmailTemplates = (() => {
   }
 
 
+  function loadPreset(presetId) {
+    const p = OUTREACH_PRESETS.find(item => item.id === presetId);
+    if (!p) return;
+    const txtArea = document.getElementById('ai-example-text');
+    if (txtArea) txtArea.value = p.text;
+    const baseEl = document.getElementById('ai-base-ccy');
+    if (baseEl) baseEl.value = p.base;
+    const quoteEl = document.getElementById('ai-quote-ccy');
+    if (quoteEl) quoteEl.value = p.quote;
+    const langEl = document.getElementById('ai-language');
+    if (langEl) langEl.value = p.lang;
+    localStorage.setItem('ai_email_example', p.text);
+    if (window.App) window.App.showToast(currentLang === 'fr' ? 'Modèle "' + p.nameFr + '" chargé !' : 'Template "' + p.nameEn + '" loaded!', 'info', 1500);
+  }
+
   async function buildEmailWithContext(pairId, example, targetLang) {
     const isFr = targetLang === 'fr';
     const base = pairId.slice(0, 3);
@@ -570,12 +654,12 @@ window.EmailTemplates = (() => {
 
     const eventsList = events.map(e => `${e.dateStr} ${e.time} (${e.country}) : ${e.title}`).join(' ; ');
 
-    const contextStr = `
-Paire : ${base}/${quote}
-Cours interbancaire actuel : ${rateStr} (variation 1J : ${d1Str}${prevCloseStr ? ' vs clôture précédente ' + prevCloseStr : ''} ; 1S : ${w1Str})
-Source : ${sourceStr}
-Évènements clés à surveiller : ${eventsList || 'Suivi des indicateurs macroéconomiques et réunions de banques centrales'}
-`;
+    const contextStr = [
+      "Paire : " + base + "/" + quote,
+      "Cours interbancaire actuel : " + rateStr + (d1Str ? " (1J : " + d1Str + (prevCloseStr ? " vs clôture " + prevCloseStr : "") + " ; 1S : " + w1Str + ")" : ""),
+      "Source : " + sourceStr,
+      "Évènements clés à surveiller : " + (eventsList || "Décisions monétaires et données d'inflation")
+    ].join("\n");
 
     const prompt = [
       "Tu es Kevin Saudubray, Corporate FX Sales chez Revolut Business, et tu écris directement à la Direction Financière / au Trésorier d'un client entreprise.",
@@ -590,11 +674,11 @@ Source : ${sourceStr}
       "--- FIN CONTEXTE ---",
       "",
       "Consignes strictes :",
-      "1. Rédige un NOUVEL e-mail contextualisé pour la paire " + base + "/" + quote + ".",
-      "2. Adopte le MÊME TON, la même structure professionnelle et le même style que l'exemple fourni.",
-      "3. RÈGLE STRICTE DE CONFORMITÉ : AUCUN CONSEIL FINANCIER NI INCITATION D'INVESTISSEMENT. Analyse factuelle uniquement.",
+      "1. Rédige un NOUVEL e-mail de prospection commerciale contextualisé pour la paire " + base + "/" + quote + ".",
+      "2. Adopte le MÊME TON commercial percutant, la même structure avec puces, section 'Impact' et 'Comment protéger vos marges avec Revolut Business (FX Forwards)' que l'exemple fourni.",
+      "3. RÈGLE STRICTE DE CONFORMITÉ : AUCUN CONSEIL FINANCIER NI RECOMMANDATION D'INVESTISSEMENT. Analyse factuelle des repères de cours.",
       "4. L'email DOIT IMPÉRATIVEMENT être rédigé en " + (isFr ? 'FRANÇAIS' : 'ANGLAIS') + ".",
-      "5. Génère uniquement le corps HTML de l'email (balises <p>, <ul>, <li>, <strong>, <div style=\"...\">) sans bloc markdown."
+      "5. Génère uniquement le corps HTML de l'email (balises <p>, <ul>, <li>, <strong>, <div>) sans bloc markdown."
     ].join("\n");
 
     // Attempt AI generation through backend if available
@@ -612,64 +696,73 @@ Source : ${sourceStr}
         }
       }
     } catch (e) {
-      console.warn('Backend AI fetch failed, using smart contextual engine fallback:', e);
+      console.warn('Backend AI fetch failed, using smart template transformer fallback:', e);
     }
 
     if (aiHtml) return aiHtml;
 
-    // Smart contextual engine (Zero-API failure guarantee: produces a polished, factual client email mimicking structure)
-    const salute = isFr ? 'Madame, Monsieur, / Chère Direction Financière,' : 'Dear Finance Director / Corporate Treasury Team,';
-    const intro = isFr
-      ? `Dans le cadre du suivi de vos opérations et flux commerciaux internationaux, voici notre point factuel sur la dynamique observée sur le cross <strong>${base}/${quote}</strong>.`
-      : `As part of our ongoing coverage of your international commercial flows, please find below our factual overview of the latest <strong>${base}/${quote}</strong> dynamics.`;
+    // Smart template transformer fallback:
+    // Transforms the chosen template directly using live market rate and context!
+    let outText = example;
 
-    const marketBox = `
-      <div style="background-color: #f8fafc; border-left: 4px solid #2563eb; padding: 14px 18px; margin: 18px 0; border-radius: 0 6px 6px 0;">
-        <div style="font-size: 11px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 8px;">
-          ${isFr ? 'Repères de marché vérifiés (' + base + '/' + quote + ')' : 'Verified Market Benchmarks (' + base + '/' + quote + ')'}
-        </div>
-        <ul style="margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.6; color: #334155;">
-          <li style="margin-bottom: 6px;">
-            <strong>${isFr ? 'Cours interbancaire :' : 'Interbank Spot Rate:'}</strong> 
-            <strong style="color: #1e40af; font-family: monospace; font-size: 14px;">${rateStr}</strong> 
-            (${isFr ? 'variation 1J :' : '1D change:'} <span style="font-weight: 700; color: ${(pairInfo && pairInfo.d1Pct >= 0) ? '#16a34a' : '#e11d48'};">${d1Str}</span>${prevCloseStr ? (isFr ? ' vs clôture ' : ' vs close ') + prevCloseStr : ''} ; ${isFr ? '1S :' : '1W:'} ${w1Str}).
-          </li>
-          ${events.length ? `
-          <li style="margin-bottom: 6px;">
-            <strong>${isFr ? 'Échéances macro à surveiller :' : 'Upcoming Macro Drivers:'}</strong>
-            ${events.map(ev => `${ev.dateStr} (${ev.time}) — ${ev.country}: ${ev.title}`).join(' · ')}
-          </li>` : ''}
-          <li style="margin-bottom: 4px;">
-            <strong>${isFr ? 'Différentiel & banques centrales :' : 'Central Bank Dynamics:'}</strong>
-            ${isFr ? 'Surveillance des orientations respectives de politique monétaire et des publications d\'inflation locales.' : 'Monitoring respective monetary stances and local inflation prints.'}
-          </li>
-        </ul>
-        <div style="font-size: 10px; color: #64748b; margin-top: 8px; font-style: italic;">
-          ${isFr ? 'Source des cotations : ' + sourceStr + ' · Données indicatives à des fins d\'information.' : 'Price source: ' + sourceStr + ' · Indicative data for informational purposes.'}
-        </div>
+    // Substitute pair names
+    outText = outText.replace(/EUR\/USD/g, base + '/' + quote)
+                     .replace(/EUR\/CHF/g, base + '/' + quote)
+                     .replace(/CZK\/USD/g, base + '/' + quote);
+
+    // Substitute rates
+    outText = outText.replace(/1[,.]1203/g, rateStr)
+                     .replace(/1[,.]1200/g, rateStr)
+                     .replace(/0[,.]9360/g, rateStr)
+                     .replace(/0[,.]0430/g, rateStr);
+
+    // If template has bullet points, convert markdown bullets and paragraphs to clean HTML
+    const lines = outText.split('\n');
+    let html = '';
+    let inList = false;
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        if (inList) { html += '</ul>'; inList = false; }
+        return;
+      }
+
+      if (trimmed.startsWith('●') || trimmed.startsWith('-') || trimmed.startsWith('*')) {
+        if (!inList) { html += '<ul style="margin: 8px 0; padding-left: 20px; font-size: 13.5px; line-height: 1.6; color: #334155;">'; inList = true; }
+        const itemContent = trimmed.replace(/^[●\-*]\s*/, '');
+        html += '<li style="margin-bottom: 6px;">' + itemContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') + '</li>';
+      } else if (/^[0-9]+\.\s*/.test(trimmed)) {
+        if (!inList) { html += '<ol style="margin: 8px 0; padding-left: 20px; font-size: 13.5px; line-height: 1.6; color: #334155;">'; inList = true; }
+        const itemContent = trimmed.replace(/^[0-9]+\.\s*/, '');
+        html += '<li style="margin-bottom: 6px;">' + itemContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') + '</li>';
+      } else {
+        if (inList) { html += '</ul>'; inList = false; }
+        if (trimmed.startsWith('Objet :') || trimmed.startsWith('Subject:')) {
+          html += '<div style="background: #eff6ff; border-left: 4px solid #2563eb; padding: 10px 14px; margin-bottom: 14px; font-weight: 700; color: #1e40af; font-size: 13px;">' + trimmed + '</div>';
+        } else if (trimmed.startsWith('Quel impact') || trimmed.startsWith('Strategic Implication') || trimmed.startsWith('Impact on your business') || trimmed.startsWith('Why act now')) {
+          html += '<div style="margin-top: 16px; font-size: 14px; font-weight: 700; color: #0f172a;">' + trimmed + '</div>';
+        } else if (trimmed.startsWith('Comment protéger') || trimmed.startsWith('How Revolut Business') || trimmed.startsWith('Strategic Next Step')) {
+          html += '<div style="margin-top: 14px; font-size: 14px; font-weight: 700; color: #1d4ed8;">' + trimmed + '</div>';
+        } else {
+          html += '<p style="margin: 0 0 12px 0; font-size: 13.5px; line-height: 1.6; color: #334155;">' + trimmed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') + '</p>';
+        }
+      }
+    });
+
+    if (inList) html += '</ul>';
+
+    // Inject live spot badge if not already mentioned
+    const liveSpotBadge = `
+      <div style="background: #f1f5f9; border-radius: 6px; padding: 8px 12px; margin: 12px 0; display: inline-block; font-size: 11.5px; color: #475569;">
+        <strong>${isFr ? 'Repère interbancaire en direct' : 'Live Interbank Benchmark'} (${base}/${quote}) :</strong> 
+        <span style="font-family: monospace; font-weight: 700; color: #1e40af; font-size: 13px;">${rateStr}</span> 
+        ${d1Str ? '(<span style="color: ' + ((pairInfo && pairInfo.d1Pct >= 0) ? '#16a34a' : '#e11d48') + '; font-weight: 700;">' + d1Str + '</span>' + (prevCloseStr ? (isFr ? ' vs clôt. ' : ' vs close ') + prevCloseStr : '') + ')' : ''}
       </div>
     `;
 
-    const solutionsBox = `
-      <div style="margin: 20px 0; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 18px;">
-        <div style="font-size: 12px; font-weight: 700; color: #1e3a8a; text-transform: uppercase; margin-bottom: 8px;">
-          ${isFr ? '💡 Solutions Revolut Business adaptées à vos flux ' + base + ' / ' + quote + ' :' : '💡 Revolut Business Capabilities for ' + base + ' / ' + quote + ' Flows:'}
-        </div>
-        <ul style="margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.55; color: #475569;">
-          <li style="margin-bottom: 4px;"><strong>${isFr ? 'Ordres au cours cible (Target Rate) :' : 'Target Rate Limit Orders:'}</strong> ${isFr ? 'Automatisez vos conversions dès qu\'un palier souhaité est touché par le marché.' : 'Automate your conversions when your desired exchange threshold is met.'}</li>
-          <li style="margin-bottom: 4px;"><strong>${isFr ? 'Comptes multi-devises :' : 'Multi-Currency Accounts:'}</strong> ${isFr ? 'Encaissez et payez directement en ' + base + ' et ' + quote + ' sans marge de conversion imprévue.' : 'Hold, receive and settle in ' + base + ' and ' + quote + ' with zero hidden markup.'}</li>
-          <li><strong>${isFr ? 'Couvertures à terme (Forwards) :' : 'FX Forwards:'}</strong> ${isFr ? 'Figez vos cours de change futurs pour sécuriser vos marges commerciales jusqu\'à 12 mois.' : 'Lock in forward rates up to 12 months to protect commercial margins.'}</li>
-        </ul>
-      </div>
-    `;
-
-    const closing = isFr
-      ? `<p style="font-size: 13.5px; line-height: 1.5; color: #334155; margin-top: 16px;">Nos équipes se tiennent à votre disposition pour analyser vos volumes de conversion et optimiser le paramétrage de vos flux.</p>`
-      : `<p style="font-size: 13.5px; line-height: 1.5; color: #334155; margin-top: 16px;">Our team remains at your disposal to review your currency volumes and assist with tailored execution setups.</p>`;
-
-    return `<p style="font-size: 14px; line-height: 1.6; color: #334155;">${intro}</p>${marketBox}${solutionsBox}${closing}`;
+    return liveSpotBadge + html;
   }
-
   async function generateAI() {
     const baseEl = document.getElementById('ai-base-ccy');
     const quoteEl = document.getElementById('ai-quote-ccy');
@@ -709,8 +802,9 @@ Source : ${sourceStr}
   function restoreAIFields() {
     setTimeout(() => {
       const exampleInput = document.getElementById('ai-example-text');
-      if (exampleInput && localStorage.getItem('ai_email_example')) {
-        exampleInput.value = localStorage.getItem('ai_email_example');
+      if (exampleInput) {
+        const saved = localStorage.getItem('ai_email_example');
+        exampleInput.value = saved || OUTREACH_PRESETS[0].text;
       }
     }, 100);
   }
@@ -815,7 +909,9 @@ Source : ${sourceStr}
     copyRichText,
     copyPlainText,
     copySubject,
-    generateAI
+    generateAI,
+    loadPreset,
+    OUTREACH_PRESETS
   };
 })();
 
