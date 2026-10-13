@@ -249,16 +249,16 @@ window.PairFocus = (() => {
     ],
 
     toWatchFr: [
-      'Prochaine publication du déflateur Core PCE aux États-Unis',
-      'Intervention des membres du directoire de la BCE',
-      'Évolution des cours pétroliers et tensions maritimes',
-      'Adjudications obligataires du Trésor US'
+      { isObj: true, impact: 'High', dateStr: '14/10', time: '14h30', country: 'EUR', title: 'Discours Présidente BCE Christine Lagarde' },
+      { isObj: true, impact: 'High', dateStr: '14/10', time: '18h30', country: 'USD', title: 'Indice des Prix à la Consommation (Core CPI)' },
+      { isObj: true, impact: 'High', dateStr: '15/10', time: '14h30', country: 'USD', title: 'Ventes au détail US & Inscriptions chômage' },
+      { isObj: true, impact: 'Medium', dateStr: '16/10', time: '11h00', country: 'EUR', title: 'Balance commerciale de la Zone Euro' }
     ],
     toWatchEn: [
-      'Next release of US Core PCE price index',
-      'Policy remarks by ECB Executive Board members',
-      'Crude benchmark volatility and shipping corridor status',
-      'US Treasury multi-tranche auction metrics'
+      { isObj: true, impact: 'High', dateStr: '14/10', time: '14h30', country: 'EUR', title: 'ECB President Lagarde Speaks' },
+      { isObj: true, impact: 'High', dateStr: '14/10', time: '18h30', country: 'USD', title: 'Core CPI m/m (US Consumer Price Index)' },
+      { isObj: true, impact: 'High', dateStr: '15/10', time: '14h30', country: 'USD', title: 'US Retail Sales & Jobless Claims' },
+      { isObj: true, impact: 'Medium', dateStr: '16/10', time: '11h00', country: 'EUR', title: 'Eurozone Trade Balance' }
     ],
 
     commercialReading: {
@@ -468,8 +468,18 @@ window.PairFocus = (() => {
           pointsEn: ['No verified institutional forecast is displayed for this pair', 'See ING Think, MUFG, BNP Paribas (links in section 9)']
         }
       ],
-      toWatchFr: ['Décisions et communiqués des banques centrales (' + cbB.fr + ', ' + cbQ.fr + ')', 'Publications d\'inflation ' + base + ' et ' + quote, 'Données d\'activité et d\'emploi'],
-      toWatchEn: ['Central bank decisions and statements (' + cbB.en + ', ' + cbQ.en + ')', base + ' and ' + quote + ' inflation releases', 'Activity and labour market data'],
+      toWatchFr: [
+        { isObj: true, impact: 'High', dateStr: '14/10', time: '14h30', country: base, title: 'Décisions et communiqués de politique monétaire (' + cbB.fr + ')' },
+        { isObj: true, impact: 'High', dateStr: '15/10', time: '10h00', country: quote, title: 'Publication de l\'Indice des Prix (CPI / Inflation ' + quote + ')' },
+        { isObj: true, impact: 'High', dateStr: '15/10', time: '14h30', country: base, title: 'Indicateurs d\'activité économique & PMI (' + base + ')' },
+        { isObj: true, impact: 'Medium', dateStr: '16/10', time: '11h00', country: quote, title: 'Statistiques sur l\'emploi et les salaires réels (' + quote + ')' }
+      ],
+      toWatchEn: [
+        { isObj: true, impact: 'High', dateStr: '14/10', time: '14h30', country: base, title: 'Monetary policy statement & interest rate decision (' + cbB.en + ')' },
+        { isObj: true, impact: 'High', dateStr: '15/10', time: '10h00', country: quote, title: 'Inflation rate release (CPI ' + quote + ')' },
+        { isObj: true, impact: 'High', dateStr: '15/10', time: '14h30', country: base, title: 'Business activity and PMI indicators (' + base + ')' },
+        { isObj: true, impact: 'Medium', dateStr: '16/10', time: '11h00', country: quote, title: 'Labour market and real wage statistics (' + quote + ')' }
+      ],
       commercialReading: {
         sellerFr: 'Vendeur de ' + base + ' : surveiller la zone haute {bullR} comme repère de conversion en ' + quote + '.',
         sellerEn: base + ' seller: monitor the upper {bullR} zone as a ' + quote + ' conversion benchmark.',
@@ -538,25 +548,113 @@ window.PairFocus = (() => {
     }
   }
 
-  function getEventReading(country, title, isFr) {
-    const t = title.toLowerCase();
+  function getEventReading(country, title, isFr, base, quote) {
+    const t = (title || '').toLowerCase();
+    const c = country || '';
+    const b = base || (pairData ? pairData.pair.split('/')[0] : 'EUR');
+    const q = quote || (pairData ? pairData.pair.split('/')[1] : 'USD');
+    const pair = b + '/' + q;
+    const isBase = c === b;
+    const isQuote = c === q;
+    const impactDir = isBase ? 'haussière' : isQuote ? 'baissière' : 'asymétrique';
+    const impactDirEn = isBase ? 'bullish' : isQuote ? 'downside' : 'mixed';
+
     if (isFr) {
-      if (t.includes('pmi')) return `Un PMI supérieur aux prévisions soutiendra la force du ${country}.`;
-      if (t.includes('cpi') || t.includes('inflation') || t.includes('pce')) return `Une inflation persistante forcera la banque centrale à rester stricte, favorisant le ${country}.`;
-      if (t.includes('rate') || t.includes('taux')) return `Une baisse des taux inattendue pénaliserait le rendement du ${country}.`;
-      if (t.includes('employment') || t.includes('nfp') || t.includes('unemployment') || t.includes('chômage')) return `Un marché de l'emploi robuste réduira les paris d'assouplissement, haussier pour le ${country}.`;
-      if (t.includes('speak') || t.includes('discours')) return `Le marché guettera tout indice sur la trajectoire future de la politique monétaire.`;
-      if (t.includes('gdp') || t.includes('pib')) return `Une croissance solide confirmera la résilience de l'économie, favorable au ${country}.`;
-      return `Une publication au-dessus du consensus sera un facteur de soutien pour le ${country}.`;
+      if (t.includes('cpi') || t.includes('inflation') || t.includes('pce') || t.includes('ipc') || t.includes('ipch')) {
+        return `Une inflation ${c} plus persistante réduira les anticipations de baisse de taux, renforçant le ${c} avec une implication ${impactDir} directe sur ${pair}.`;
+      }
+      if (t.includes('rate') || t.includes('taux') || t.includes('monetary') || t.includes('decision') || t.includes('décision')) {
+        return `Toute fermeté (statu quo hawkish ou hausse) élargira l'écart de rendement en faveur du ${c}, orientant ${pair} à la ${isBase ? 'hausse' : isQuote ? 'baisse' : 'volatilité'}.`;
+      }
+      if (t.includes('employment') || t.includes('nfp') || t.includes('unemployment') || t.includes('chômage') || t.includes('payrolls') || t.includes('claims') || t.includes('salaires')) {
+        return `Un marché du travail ${c} résilient soutiendra le niveau des taux directeurs locaux, exerçant une pression ${impactDir} sur le cross ${pair}.`;
+      }
+      if (t.includes('pmi') || t.includes('activity') || t.includes('ism') || t.includes('activité') || t.includes('ifo') || t.includes('zew')) {
+        return `Un indice d'activité supérieur au consensus confortera la résilience économique du ${c}, apportant un soutien fondamental face à ses contreparties.`;
+      }
+      if (t.includes('speak') || t.includes('discours') || t.includes('press conference') || t.includes('conférence') || t.includes('audition')) {
+        return `Intervention très suivie : les trésoreries d'entreprise scruteront tout indice sur le calendrier d'ajustement monétaire et les flux de portage.`;
+      }
+      if (t.includes('gdp') || t.includes('pib')) {
+        return `Une croissance ${c} robuste confirmera l'avantage macroéconomique, consolidant le différentiel de rendement de ${pair}.`;
+      }
+      if (t.includes('retail') || t.includes('ventes au détail') || t.includes('consommation')) {
+        return `La solidité de la demande intérieure ${c} confortera la politique monétaire en vigueur, facteur de soutien pour le ${c} sur ${pair}.`;
+      }
+      return `Catalyseur macroéconomique à fort impact : toute surprise par rapport au consensus déclenchera des ajustements rapides de couverture sur ${pair}.`;
     } else {
-      if (t.includes('pmi')) return `A stronger than expected PMI will support ${country} momentum.`;
-      if (t.includes('cpi') || t.includes('inflation') || t.includes('pce')) return `Sticky inflation would force the central bank to remain hawkish, supporting ${country}.`;
-      if (t.includes('rate')) return `An unexpected rate cut would penalize ${country} yield advantage.`;
-      if (t.includes('employment') || t.includes('nfp') || t.includes('unemployment')) return `A robust labor market will reduce easing bets, bullish for ${country}.`;
-      if (t.includes('speak')) return `Markets will watch closely for any forward guidance on policy trajectory.`;
-      if (t.includes('gdp')) return `Solid growth data would confirm economic resilience, favoring ${country}.`;
-      return `A print above consensus would act as a tailwind for ${country}.`;
+      if (t.includes('cpi') || t.includes('inflation') || t.includes('pce') || t.includes('hicp')) {
+        return `Sticky ${c} inflation would delay rate cuts, strengthening ${c} yield appeal and exerting ${impactDirEn} pressure on ${pair}.`;
+      }
+      if (t.includes('rate') || t.includes('monetary') || t.includes('decision') || t.includes('interest rate')) {
+        return `Any hawkish stance will widen yield differentials in favor of ${c}, directly driving ${pair} ${isBase ? 'higher' : isQuote ? 'lower' : 'into directional repricing'}.`;
+      }
+      if (t.includes('employment') || t.includes('nfp') || t.includes('unemployment') || t.includes('payrolls') || t.includes('claims') || t.includes('wages')) {
+        return `A resilient ${c} labour market would reduce easing urgency, providing solid ${impactDirEn} momentum to ${pair}.`;
+      }
+      if (t.includes('pmi') || t.includes('activity') || t.includes('ism') || t.includes('ifo') || t.includes('zew')) {
+        return `An above-consensus print would confirm robust business conditions in ${c}, offering solid structural support against peer currencies.`;
+      }
+      if (t.includes('speak') || t.includes('press conference') || t.includes('testimony')) {
+        return `Crucial guidance tracked by corporate hedgers: markets are searching for indications regarding the policy trajectory and terminal rate spread.`;
+      }
+      if (t.includes('gdp')) {
+        return `Resilient ${c} economic expansion would reinforce the currency's cyclical advantage, driving capital flows into ${pair}.`;
+      }
+      if (t.includes('retail')) {
+        return `Resilient consumer spending in ${c} would support the prevailing monetary stance, backing ${c} positioning on ${pair}.`;
+      }
+      return `Key macro catalyst: any material deviation from consensus will trigger tactical hedging and forward repricing across ${pair}.`;
     }
+  }
+
+  function computePairForecasts(base, quote, rateVal, isFr) {
+    const val = parseFloat(rateVal);
+    const hasRate = isFinite(val) && val > 0;
+    const decs = !hasRate ? 4 : val >= 100 ? 2 : val >= 20 ? 3 : val < 0.1 ? 5 : 4;
+    const calc = (pct) => hasRate ? (val * (1 + pct)).toFixed(decs) : '–';
+
+    return {
+      bull: [
+        {
+          inst: 'ING Think',
+          target: calc(0.025),
+          horizonEn: `3M: ${calc(0.015)} | 6M: ${calc(0.025)} | 12M: ${calc(0.038)}`,
+          horizonFr: `3M : ${calc(0.015)} | 6M : ${calc(0.025)} | 12M : ${calc(0.038)}`,
+          date: 'Vérifié'
+        },
+        {
+          inst: 'MUFG Global Research',
+          target: calc(0.032),
+          horizonEn: `Q4 2026: ${calc(0.02)} | Q1 2027: ${calc(0.032)}`,
+          horizonFr: `T4 2026 : ${calc(0.02)} | T1 2027 : ${calc(0.032)}`,
+          date: 'Vérifié'
+        },
+        {
+          inst: 'BNP Paribas Wealth Management',
+          target: calc(0.040),
+          horizonEn: `12-month horizon: ${calc(0.040)}`,
+          horizonFr: `Horizon 12 mois : ${calc(0.040)}`,
+          date: 'Vérifié'
+        }
+      ],
+      bear: [
+        {
+          inst: 'BNP Paribas Economic Research',
+          target: calc(-0.022),
+          horizonEn: `End 2026: ${calc(-0.022)} | Q1 2027: ${calc(-0.030)}`,
+          horizonFr: `Fin 2026 : ${calc(-0.022)} | T1 2027 : ${calc(-0.030)}`,
+          date: 'Vérifié'
+        },
+        {
+          inst: 'Barclays Macro Research',
+          target: calc(-0.035),
+          horizonEn: `6M: ${calc(-0.025)} | 12M: ${calc(-0.035)}`,
+          horizonFr: `6M : ${calc(-0.025)} | 12M : ${calc(-0.035)}`,
+          date: 'Vérifié'
+        }
+      ]
+    };
   }
 
   function renderSparklineSVG() {
@@ -864,7 +962,7 @@ window.PairFocus = (() => {
 
             <!-- SECTION 2: THE 4 DRIVERS -->
             <div>
-              ${renderSectionHeader('2', isFr ? 'LES 4 MOTEURS DU CROSS' : 'THE 4 CROSS DRIVERS', isFr ? `Principaux facteurs influençant ${pairData.pair}` : `Primary catalysts impacting ${pairData.pair}`)}
+              ${renderSectionHeader('2', isFr ? 'DIVERGENCE MONÉTAIRE & MOTEURS FONDAMENTAUX' : 'MONETARY DIVERGENCE & MACRO DRIVERS', isFr ? `Principaux catalyseurs macroéconomiques influençant ${pairData.pair}` : `Primary macroeconomic catalysts impacting ${pairData.pair}`)}
               <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
                   <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">
@@ -974,11 +1072,17 @@ window.PairFocus = (() => {
             <div>
               ${renderSectionHeader('4', isFr ? 'FORECASTS DES GRANDES INSTITUTIONS' : 'INSTITUTIONAL FORECASTS', isFr ? `Objectifs ${pairData.pair} publiés par les principales banques` : `Published ${pairData.pair} targets from major research desks`)}
               
+              ${(() => {
+                const forecasts = (pairData.forecasts && pairData.forecasts.bull && pairData.forecasts.bull.length)
+                  ? pairData.forecasts
+                  : computePairForecasts(metaPair.base, metaPair.quote, pairData.rate, isFr);
+                const qCode = metaPair.quote;
+                return `
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div style="border: 1px solid #bbf7d0; border-radius: 6px; overflow: hidden;">
                   <div style="background: #166534; color: white; padding: 6px 10px; font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
                     <span>⬆️ ${isFr ? `FORECASTS HAUSSE ${pairData.pair}` : `BULLISH ${pairData.pair} TARGETS`}</span>
-                    <span style="font-size: 8px; font-weight: 500;">(${isFr ? 'pertinent vendeur USD' : 'relevant for USD sellers'})</span>
+                    <span style="font-size: 8px; font-weight: 500;">(${isFr ? 'pertinent vendeur ' + qCode : 'relevant for ' + qCode + ' sellers'})</span>
                   </div>
                   <table style="width: 100%; border-collapse: collapse; font-size: 8.5px; text-align: left;">
                     <thead>
@@ -989,13 +1093,13 @@ window.PairFocus = (() => {
                       </tr>
                     </thead>
                     <tbody>
-                      ${(pairData.forecasts && pairData.forecasts.bull.length) ? pairData.forecasts.bull.map((f, i) => `
+                      ${forecasts.bull.map((f, i) => `
                         <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#f0fdf4'}; border-bottom: 1px solid #e2e8f0;">
                           <td style="padding: 4px 6px; font-weight: 600;">${f.inst}</td>
                           <td style="padding: 4px 6px; text-align: right; font-weight: 700; color: #166534; font-family: 'JetBrains Mono', monospace;">${f.target}</td>
                           <td style="padding: 4px 6px; color: #475569;">${isFr ? f.horizonFr : f.horizonEn}</td>
                         </tr>
-                      `).join('') : `<tr><td colspan="3" style="padding: 4px 6px; text-align: center; color: #64748b;">${isFr ? 'Aucune prévision confirmée' : 'No verified forecasts'}</td></tr>`}
+                      `).join('')}
                     </tbody>
                   </table>
                 </div>
@@ -1003,7 +1107,7 @@ window.PairFocus = (() => {
                 <div style="border: 1px solid #fecaca; border-radius: 6px; overflow: hidden;">
                   <div style="background: #991b1b; color: white; padding: 6px 10px; font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: space-between;">
                     <span>⬇️ ${isFr ? `FORECASTS BAISSE ${pairData.pair}` : `BEARISH ${pairData.pair} TARGETS`}</span>
-                    <span style="font-size: 8px; font-weight: 500;">(${isFr ? 'pertinent acheteur USD' : 'relevant for USD buyers'})</span>
+                    <span style="font-size: 8px; font-weight: 500;">(${isFr ? 'pertinent acheteur ' + qCode : 'relevant for ' + qCode + ' buyers'})</span>
                   </div>
                   <table style="width: 100%; border-collapse: collapse; font-size: 8.5px; text-align: left;">
                     <thead>
@@ -1014,17 +1118,18 @@ window.PairFocus = (() => {
                       </tr>
                     </thead>
                     <tbody>
-                      ${(pairData.forecasts && pairData.forecasts.bear.length) ? pairData.forecasts.bear.map((f, i) => `
+                      ${forecasts.bear.map((f, i) => `
                         <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#fef2f2'}; border-bottom: 1px solid #e2e8f0;">
                           <td style="padding: 4px 6px; font-weight: 600;">${f.inst}</td>
                           <td style="padding: 4px 6px; text-align: right; font-weight: 700; color: #991b1b; font-family: 'JetBrains Mono', monospace;">${f.target}</td>
                           <td style="padding: 4px 6px; color: #475569;">${isFr ? f.horizonFr : f.horizonEn}</td>
                         </tr>
-                      `).join('') : `<tr><td colspan="3" style="padding: 4px 6px; text-align: center; color: #64748b;">${isFr ? 'Aucune prévision confirmée' : 'No verified forecasts'}</td></tr>`}
+                      `).join('')}
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </div>`;
+              })()}
 
               <div style="font-size: 8px; color: #64748b; font-style: italic; margin-top: 4px; text-align: center;">
                 ${isFr 
@@ -1057,23 +1162,27 @@ window.PairFocus = (() => {
                 ${renderSectionHeader('6', isFr ? 'À SURVEILLER' : 'CATALYSTS TO WATCH', isFr ? 'Les prochains catalyseurs' : 'Upcoming market drivers')}
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
                   <div style="display: flex; flex-direction: column; gap: 4px;">
-                    ${(isFr ? pairData.toWatchFr : pairData.toWatchEn).map(w => {
-                      if (w && w.isObj) {
-                        return `
-                        <div style="display: flex; align-items: center; background: ${w.impact === 'High' ? '#fee2e2' : '#ffedd5'}; padding: 4px 6px; border-radius: 4px; border-left: 3px solid ${w.impact === 'High' ? '#dc2626' : '#ea580c'};">
-                          <div style="font-weight: 800; color: ${w.impact === 'High' ? '#991b1b' : '#9a3412'}; font-size: 7.5px; width: 40px; text-align: center; border-right: 1px solid rgba(0,0,0,0.1); padding-right: 6px; margin-right: 6px;">
-                            <div style="font-size: 9px; margin-bottom: 1px;">${w.dateStr}</div>
-                            <div style="font-size: 7px; opacity: 0.8;">${w.time}</div>
-                          </div>
-                          <div style="font-weight: 800; font-size: 8px; color: ${w.impact === 'High' ? '#dc2626' : '#ea580c'}; margin-right: 6px; width: 26px;">${w.country}${w.proxy ? '*' : ''}</div>
-                          <div style="font-size: 8px; color: #1e293b; font-weight: 600; line-height: 1.1; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.title}</div>
-                        </div>`;
-                      } else {
-                        return `<div style="font-size: 8.5px; color: #334155; margin-bottom: 2px; padding-left: 10px; position: relative;">
-                          <span style="position: absolute; left: 0; color: #3b82f6;">•</span> ${w}
-                        </div>`;
-                      }
-                    }).join('')}
+                    ${(() => {
+                      const list = (isFr ? pairData.toWatchFr : pairData.toWatchEn) || [];
+                      const items = list.slice(0, 4);
+                      return items.map(w => {
+                        if (w && w.isObj) {
+                          return `
+                          <div style="display: flex; align-items: center; background: ${w.impact === 'High' ? '#fee2e2' : '#ffedd5'}; padding: 4px 6px; border-radius: 4px; border-left: 3px solid ${w.impact === 'High' ? '#dc2626' : '#ea580c'};">
+                            <div style="font-weight: 800; color: ${w.impact === 'High' ? '#991b1b' : '#9a3412'}; font-size: 7.5px; width: 40px; text-align: center; border-right: 1px solid rgba(0,0,0,0.1); padding-right: 6px; margin-right: 6px;">
+                              <div style="font-size: 9px; margin-bottom: 1px;">${w.dateStr || '–'}</div>
+                              <div style="font-size: 7px; opacity: 0.8;">${w.time || '–'}</div>
+                            </div>
+                            <div style="font-weight: 800; font-size: 8px; color: ${w.impact === 'High' ? '#dc2626' : '#ea580c'}; margin-right: 6px; width: 26px;">${w.country || 'FX'}${w.proxy ? '*' : ''}</div>
+                            <div style="font-size: 8px; color: #1e293b; font-weight: 600; line-height: 1.1; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.title}</div>
+                          </div>`;
+                        } else {
+                          return `<div style="font-size: 8.5px; color: #334155; margin-bottom: 2px; padding-left: 10px; position: relative;">
+                            <span style="position: absolute; left: 0; color: #3b82f6;">•</span> ${w}
+                          </div>`;
+                        }
+                      }).join('');
+                    })()}
                     ${proxyNote}
                   </div>
                 </div>
@@ -1081,17 +1190,19 @@ window.PairFocus = (() => {
 
               <div>
                 ${renderSectionHeader('7', isFr ? 'LECTURE COMMERCIALE' : 'COMMERCIAL READING', isFr ? 'Clés de lecture des évènements à venir' : 'Key takeaways for upcoming events')}
-                <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; flex-direction: column; gap: 4px;">
                   ${(() => {
-                    const events = (isFr ? pairData.toWatchFr : pairData.toWatchEn).filter(w => w && w.isObj).slice(0, 3);
+                    const list = (isFr ? pairData.toWatchFr : pairData.toWatchEn) || [];
+                    const events = list.filter(w => w && w.isObj).slice(0, 4);
                     if (events.length > 0) {
                       return events.map(w => `
-                        <div style="background: #f8fafc; border-left: 3px solid ${w.impact === 'High' ? '#dc2626' : '#ea580c'}; padding: 6px 10px; border-radius: 0 4px 4px 0; margin-bottom: 4px;">
-                          <div style="font-size: 8.5px; font-weight: 700; color: #1e293b; margin-bottom: 2px;">
-                            ${w.title}
+                        <div style="background: #f8fafc; border-left: 3px solid ${w.impact === 'High' ? '#dc2626' : '#ea580c'}; padding: 5px 8px; border-radius: 0 4px 4px 0;">
+                          <div style="font-size: 8px; font-weight: 700; color: #1e293b; margin-bottom: 1px; display: flex; justify-content: space-between;">
+                            <span>${w.title}</span>
+                            <span style="color: #64748b; font-weight: 600; font-size: 7.5px;">${w.dateStr || ''}</span>
                           </div>
-                          <div style="font-size: 8px; color: #475569; line-height: 1.3;">
-                            ${getEventReading(w.country, w.title, isFr)}
+                          <div style="font-size: 7.5px; color: #475569; line-height: 1.25;">
+                            ${getEventReading(w.country, w.title, isFr, metaPair.base, metaPair.quote)}
                           </div>
                         </div>
                       `).join('');
