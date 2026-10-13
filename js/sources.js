@@ -17,6 +17,11 @@ window.Sources = (() => {
     cnb: { label: 'CNB — Monetary policy', url: 'https://www.cnb.cz/en/monetary-policy/' },
     mnb: { label: 'MNB — Monetary policy', url: 'https://www.mnb.hu/en/monetary-policy' },
     nbp: { label: 'NBP — Monetary policy', url: 'https://nbp.pl/en/monetary-policy/' },
+    boe: { label: 'BoE — Monetary policy', url: 'https://www.bankofengland.co.uk/monetary-policy' },
+    norges: { label: 'Norges Bank — Monetary policy', url: 'https://www.norges-bank.no/en/topics/Monetary-policy/' },
+    riksbank: { label: 'Riksbank — Monetary policy', url: 'https://www.riksbank.se/en-gb/monetary-policy/' },
+    dnb: { label: 'Danmarks Nationalbank — Monetary policy', url: 'https://www.nationalbanken.dk/en/what-we-do/stable-prices-monetary-and-fx-policy' },
+    bnr: { label: 'BNR — Monetary policy', url: 'https://www.bnr.ro/Monetary-Policy-3231.aspx' },
     bls: { label: 'US BLS — CPI & Employment', url: 'https://www.bls.gov/cpi/' },
     eurostat: { label: 'Eurostat — Euro indicators', url: 'https://ec.europa.eu/eurostat/web/euro-indicators' },
     tv: { label: 'TradingView — Major FX rates', url: 'https://www.tradingview.com/markets/currencies/rates-major/' },
@@ -27,15 +32,20 @@ window.Sources = (() => {
     bnp: { label: 'BNP Paribas Economic Research', url: 'https://economic-research.bnpparibas.com/' }
   };
 
-  const PAIR_CB = {
-    'EUR/USD': ['ecb', 'fed', 'bls'],
-    'EUR/CHF': ['ecb', 'snb', 'eurostat'],
-    'CHF/USD': ['snb', 'fed', 'bls'],
-    'CZK/USD': ['cnb', 'fed', 'bls'],
-    'USD/HUF': ['mnb', 'fed', 'bls'],
-    'EUR/PLN': ['ecb', 'nbp', 'eurostat'],
-    'USD/PLN': ['nbp', 'fed', 'bls']
+  const CB_BY_CCY = {
+    EUR: 'ecb', USD: 'fed', GBP: 'boe', CHF: 'snb', NOK: 'norges', SEK: 'riksbank',
+    DKK: 'dnb', RON: 'bnr', CZK: 'cnb', HUF: 'mnb', PLN: 'nbp'
   };
+  const DATA_BY_CCY = { USD: 'bls', EUR: 'eurostat' };
+
+  /** [base CB, quote CB, macro data source] for any pair, e.g. 'NOK/SEK' */
+  function pairSources(pair) {
+    const [base, quote] = String(pair).split('/');
+    const a = CB_BY_CCY[base] || 'ecb';
+    const b = CB_BY_CCY[quote] || 'fed';
+    const d = DATA_BY_CCY[quote] || DATA_BY_CCY[base] || 'ecbfx';
+    return [a, b, d];
+  }
 
   function link(l) {
     return `<a href="${l.url}" target="_blank" rel="noopener noreferrer" style="color:#1d4ed8;text-decoration:none;font-weight:600;">${l.label} ↗</a>`;
@@ -67,7 +77,7 @@ window.Sources = (() => {
       c2 = [O.fed, O.ecb, O.snb, O.cnb, O.mnb, O.nbp].map(link);
       c3 = [O.tv, O.ecbfx, O.reutersFx, O.reutersCom, O.bls, O.eurostat].map(link);
     } else {
-      const [a, b, d] = PAIR_CB[pair] || PAIR_CB['EUR/USD'];
+      const [a, b, d] = pairSources(pair);
       c1 = [
         { label: fr ? `Actu. ${pair} (48h)` : `${pair} news (48h)`, url: news(pair + ' forex') },
         { label: fr ? `Prévisions ${pair} des banques` : `${pair} bank forecasts`, url: news(pair + ' forecast ING OR MUFG OR BNP') },
