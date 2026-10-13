@@ -555,8 +555,17 @@ window.EmailTemplates = (() => {
                 <label style="font-size: 11px; font-weight: 600; color: #475569;">${currentLang === 'fr' ? "Email modèle (Structure & Ton) :" : 'Email Template (Style & Structure):'}</label>
                 <button type="button" onclick="EmailTemplates.loadPreset('fr_eurusd_1')" style="font-size: 9.5px; background: none; border: none; color: #2563eb; cursor: pointer; text-decoration: underline; padding: 0;">${currentLang === 'fr' ? 'Réinitialiser' : 'Reset'}</button>
               </div>
-              <textarea id="ai-example-text" style="width: 100%; height: 140px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; line-height: 1.4; margin-bottom: 12px; resize: vertical;" placeholder="${currentLang === 'fr' ? 'Choisissez un modèle ci-dessus ou collez le vôtre...' : 'Select a template above or paste your own...'}"></textarea>
-              
+              <textarea id="ai-example-text" style="width: 100%; height: 130px; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; line-height: 1.4; margin-bottom: 12px; resize: vertical;" placeholder="${currentLang === 'fr' ? 'Choisissez un modèle ci-dessus ou collez le vôtre...' : 'Select a template above or paste your own...'}"></textarea>
+
+              <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? "Secteur d'activité du prospect :" : 'Client Industry Sector:'}</label>
+              <select id="ai-sector" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px; background: #ffffff;">
+                <option value="general" selected>${currentLang === 'fr' ? '🏢 Général / Entreprise import-export' : '🏢 General / Corporate FX'}</option>
+                <option value="trade">${currentLang === 'fr' ? '🚢 Négoce, Matières Premières & Fret' : '🚢 Commodity Trading & Freight'}</option>
+                <option value="tech">${currentLang === 'fr' ? '💻 Tech, SaaS & Services Cloud (USD)' : '💻 Tech, SaaS & Cloud Services (USD)'}</option>
+                <option value="retail">${currentLang === 'fr' ? '🛒 E-commerce, Retail & Biens de consommation' : '🛒 E-commerce, Retail & Consumer Goods'}</option>
+                <option value="manufacturing">${currentLang === 'fr' ? '⚙️ Industrie, Équipement & Sous-traitance CEE' : '⚙️ Manufacturing & CEE Subcontracting'}</option>
+              </select>
+
               <label style="display: block; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 4px;">${currentLang === 'fr' ? "Langue de rédaction :" : 'Email Output Language:'}</label>
               <select id="ai-language" style="width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; margin-bottom: 12px;">
                 <option value="fr" selected>🇫🇷 Français</option>
@@ -631,11 +640,36 @@ window.EmailTemplates = (() => {
     if (window.App) window.App.showToast(currentLang === 'fr' ? 'Modèle "' + p.nameFr + '" chargé !' : 'Template "' + p.nameEn + '" loaded!', 'info', 1500);
   }
 
-  async function buildEmailWithContext(pairId, example, targetLang) {
+  async function buildEmailWithContext(pairId, example, targetLang, sector) {
     const isFr = targetLang === 'fr';
     const base = pairId.slice(0, 3);
     const quote = pairId.slice(3, 6);
     const M = window.MarketData;
+
+    // Sector-specific business angles
+    const SECTOR_ANGLES = {
+      trade: {
+        fr: "Négoce & Fret : couverture de cargaisons, coût du fret maritime indexé en dollar et gestion des flux d'approvisionnement en matières premières.",
+        en: "Commodity Trading & Freight: shipping cargo hedging, dollar-denominated freight rates, and volatile raw material import commitments."
+      },
+      tech: {
+        fr: "Tech & Services Cloud : sécurisation des coûts de serveurs (AWS/Azure/GCP en USD), licences logicielles et salaires d'équipes offshore.",
+        en: "Tech & Cloud Services: hedging dollar-denominated infrastructure (AWS/Azure/GCP), SaaS licenses, and cross-border tech payroll."
+      },
+      retail: {
+        fr: "E-commerce & Biens de consommation : protection du coût d'achat des stocks saisonniers, délais de dédouanement et préservation de la marge brute unitaire.",
+        en: "E-commerce & Consumer Goods: inventory cost protection, landed product cost predictability, and defending unit gross retail margins."
+      },
+      manufacturing: {
+        fr: "Industrie & Sous-traitance : sécurisation des règlements de sous-traitance industrielle, composants électroniques et flux de fabrication CEE (PLN, CZK).",
+        en: "Manufacturing & Industrial Subcontracting: securing industrial assembly contracts, electronic components, and regional CEE supply chains (PLN, CZK)."
+      },
+      general: {
+        fr: "Gestion de trésorerie internationale : sécurisation des règlements fournisseurs en devises et garantie des prévisions budgétaires annuelles.",
+        en: "Corporate Treasury: securing foreign currency payables and safeguarding quarterly operational budget targets."
+      }
+    };
+    const sectorAngle = (SECTOR_ANGLES[sector] || SECTOR_ANGLES.general)[isFr ? 'fr' : 'en'];
 
     // Fetch live market data & calendar
     let pairInfo = null;
@@ -656,6 +690,7 @@ window.EmailTemplates = (() => {
 
     const contextStr = [
       "Paire : " + base + "/" + quote,
+      "Secteur client ciblé : " + sectorAngle,
       "Cours interbancaire actuel : " + rateStr + (d1Str ? " (1J : " + d1Str + (prevCloseStr ? " vs clôture " + prevCloseStr : "") + " ; 1S : " + w1Str + ")" : ""),
       "Source : " + sourceStr,
       "Évènements clés à surveiller : " + (eventsList || "Décisions monétaires et données d'inflation")
@@ -773,6 +808,8 @@ window.EmailTemplates = (() => {
     const example = exampleEl ? exampleEl.value.trim() : '';
     const langEl = document.getElementById('ai-language');
     const targetLang = langEl ? langEl.value : currentLang;
+    const sectorEl = document.getElementById('ai-sector');
+    const sector = sectorEl ? sectorEl.value : 'general';
 
     if (!example) {
       if (window.App) window.App.showToast(currentLang === 'fr' ? 'Veuillez coller un exemple d\'e-mail dans le formulaire.' : 'Please paste an example email in the form.', 'error');
@@ -786,7 +823,7 @@ window.EmailTemplates = (() => {
     if (window.App) window.App.showToast(currentLang === 'fr' ? 'Génération en cours...' : 'Generating email...', 'info');
 
     try {
-      const html = await buildEmailWithContext(pairId, example, targetLang);
+      const html = await buildEmailWithContext(pairId, example, targetLang, sector);
       window.EmailTemplates.aiGeneratedContent = html;
       renderIframeContent();
       if (window.App) window.App.showToast(currentLang === 'fr' ? 'E-mail généré avec succès !' : 'Email generated successfully!', 'success');
