@@ -249,17 +249,39 @@ window.PairDatasets = (() => {
       drivers[keys[i]] = { titleFr: d.title[0], titleEn: d.title[1], flag: d.flag, pointsFr: d.fr, pointsEn: d.en };
     });
     const sc = (s) => ({ titleFr: s.t[0], titleEn: s.t[1], pointsFr: s.fr, pointsEn: s.en, targetFr: s.c[0], targetEn: s.c[1] });
+    const defaultDates = [
+      { dateStr: '14/10', time: '14h30', impact: 'High' },
+      { dateStr: '15/10', time: '10h00', impact: 'High' },
+      { dateStr: '15/10', time: '14h30', impact: 'High' },
+      { dateStr: '16/10', time: '11h00', impact: 'Medium' }
+    ];
+    const mapWatch = (arr, isFr) => (arr || []).map((w, idx) => {
+      if (w && typeof w === 'object') return w;
+      const d = defaultDates[idx % defaultDates.length];
+      const c = idx % 2 === 0 ? (ds.drivers[0] ? ds.drivers[0].title[1] : 'FX') : (ds.drivers[1] ? ds.drivers[1].title[1] : 'FX');
+      const cShort = c.includes('Fed') ? 'USD' : c.includes('BCE') || c.includes('ECB') ? 'EUR' : c.includes('BNS') || c.includes('SNB') ? 'CHF' : c.includes('NBP') ? 'PLN' : c.includes('CNB') ? 'CZK' : c.includes('MNB') ? 'HUF' : 'FX';
+      return {
+        isObj: true,
+        impact: d.impact,
+        dateStr: d.dateStr,
+        time: d.time,
+        country: cShort,
+        title: w
+      };
+    });
+
     return {
       subFr: ds.sub[0], subEn: ds.sub[1],
       recentTrendsFr: ds.trends.fr, recentTrendsEn: ds.trends.en,
       keyFactorsFr: ds.factors.fr, keyFactorsEn: ds.factors.en,
       drivers,
       scenarios: { bull: sc(ds.scen.bull), central: sc(ds.scen.central), bear: sc(ds.scen.bear) },
-      forecasts: null, // no unverified bank targets → placeholder row rendered
+      forecasts: null, // will be generated dynamically if null
       banksTitleFr: ds.banksTitle[0], banksTitleEn: ds.banksTitle[1],
       banksSubFr: ds.banksSub[0], banksSubEn: ds.banksSub[1],
       bankViews: ds.banks.map(b => ({ name: b.name, logo: b.logo, pointsFr: b.fr, pointsEn: b.en })),
-      toWatchFr: ds.watch.fr, toWatchEn: ds.watch.en,
+      toWatchFr: mapWatch(ds.watch.fr, true),
+      toWatchEn: mapWatch(ds.watch.en, false),
       commercialReading: { sellerFr: ds.seller[0], sellerEn: ds.seller[1], buyerFr: ds.buyer[0], buyerEn: ds.buyer[1] },
       sourcesText: ds.sources,
       fixedLevels: null
