@@ -14,11 +14,14 @@ window.MarketRadar = (() => {
   let cachedCalendarEvents = null;
   let isLoading = false;
   let simState = {
-    pair: 'EURUSD',
+    base: 'EUR',
+    quote: 'USD',
     volume: 250000,
     direction: 'buy_foreign', // 'buy_foreign' (importateur) | 'sell_foreign' (exportateur)
     horizon: 6, // months
-    customRate: null
+    spotRate: 1.1203,
+    forwardRate: 1.1180,
+    driftPct: 3.0
   };
 
   // Major tracked cross pairs for heatmap & radar
@@ -432,27 +435,50 @@ window.MarketRadar = (() => {
   // ───────────────────────── POINT 1: SIMULATEUR FX FORWARDS & ROI ─────────────────────────
   function renderSimulatorView() {
     const isFr = currentLang === 'fr';
-    const pair = TRACKED_PAIRS.find(p => (p.base + p.quote) === simState.pair) || TRACKED_PAIRS[0];
-    const quoteData = cachedQuotes ? cachedQuotes.find(q => q.base === pair.base && q.quote === pair.quote) : null;
-    const currentSpot = simState.customRate || (quoteData && quoteData.rateVal ? quoteData.rateVal : 1.1203);
+    const CCY_FLAGS = window.MarketData ? window.MarketData.FLAGS : {};
+    const CCY_CODES = window.MarketData ? window.MarketData.CODES : ['EUR', 'USD', 'GBP', 'CHF', 'PLN', 'CZK', 'HUF', 'NOK', 'SEK'];
+
+    const base = simState.base || 'EUR';
+    const quote = simState.quote || 'USD';
+    const pairName = base + '/' + quote;
+    const flags = (CCY_FLAGS[base] || '') + ' ' + (CCY_FLAGS[quote] || '');
+
+    // Current spot rate from cache or default
+    const quoteData = cachedQuotes ? cachedQuotes.find(q => q.base === base && q.quote === quote) : null;
+    let spotVal = simState.spotRate;
+    if (spotVal == null || isNaN(spotVal)) {
+      spotVal = quoteData && quoteData.rateVal ? quoteData.rateVal : 1.1203;
+      simState.spotRate = spotVal;
+    }
+
+    // Forward rate proposed by Revolut
+    let fwdVal = simState.forwardRate;
+    if (fwdVal == null || isNaN(fwdVal)) {
+      // Default forward rate close to spot (with -0.15% to -0.3% carry depending on horizon)
+      fwdVal = parseFloat((spotVal * (1 - 0.002 * (simState.horizon / 6))).toFixed(4));
+      simState.forwardRate = fwdVal;
+    }
+
     const vol = simState.volume || 250000;
-
-    // Assumptions for 6-month scenario:
-    // Adverse move (+2.5% adverse variation depending on buyer or seller)
-    // Favorable move (+2.5% favorable variation)
+    const driftPct = simState.driftPct || 3.0; // % de risque de dérive modifiable
     const isBuyForeign = simState.direction === 'buy_foreign';
-    // If buying foreign (importateur): paying more euros if pair drops (for EUR/USD) or foreign rises
-    // Cost in EUR at current spot
-    const costSpotEUR = vol / currentSpot;
-    // Scenario without hedging if market moves against client by 3.2%
-    const adverseRate = isBuyForeign ? currentSpot * 0.968 : currentSpot * 1.032;
-    const costAdverseEUR = vol / adverseRate;
-    const riskDiffEUR = Math.abs(costAdverseEUR - costSpotEUR);
 
-    // Forward locked cost (assuming small forward point adjustment approx 0.2%)
-    const forwardRate = currentSpot * 0.998;
-    const forwardCostEUR = vol / forwardRate;
-    const guaranteedSavings = Math.abs(costAdverseEUR - forwardCostEUR);
+    // Financial impacts:
+    // Spot budget
+    const costSpotEUR = vol / spotVal;
+    // Guaranteed Forward budget
+    const costForwardEUR = vol / fwdVal;
+
+    // Adverse market drift scenario
+    const adverseFactor = 1 - (driftPct / 100);
+    const favorableFactor = 1 + (driftPct / 100);
+    const adverseRate = isBuyForeign ? (spotVal * adverseFactor) : (spotVal * favorableFactor);
+    const costAdverseEUR = vol / adverseRate;
+
+    // Surcoût budgétaire (risque)
+    const riskDiffEUR = Math.abs(costAdverseEUR - costSpotEUR);
+    // Marge nette sécurisée via le contrat à terme
+    const guaranteedSavings = Math.abs(costAdverseEUR - costForwardEUR);
 
     return `
       <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
@@ -462,7 +488,7 @@ window.MarketRadar = (() => {
               ${isFr ? '🧮 Simulateur de Couverture de Change & ROI Client (FX Forwards)' : '🧮 FX Forward Hedging Simulator & Client ROI'}
             </h3>
             <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">
-              ${isFr ? 'Chiffrez immédiatement les économies et la protection de marge budgétaire pour vos rendez-vous et vos emails prospects.' : 'Instantly quantify margin protection and budget certainty for sales meetings and outreach.'}
+              ${isFr ? 'Comparez le cours spot, le cours de couverture proposé par Revolut et quantifiez la protection de marge budgétaire.' : 'Compare spot rate, Revolut forward hedging rate, and quantify guaranteed margin protection.'}
             </p>
           </div>
           <button id="copy-sim-pitch-btn" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 6px 12px;">
@@ -470,97 +496,132 @@ window.MarketRadar = (() => {
           </button>
         </div>
 
-        <div style="display: grid; grid-template-columns: 340px 1fr; gap: 24px;">
+        <div style="display: grid; grid-template-columns: 360px 1fr; gap: 24px;">
           <!-- Controls Panel -->
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px;">
+            
+            <!-- Currency selector like in Pair Focus -->
             <div>
               <label style="display: block; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
-                ${isFr ? 'Paire de devises exposée :' : 'Currency Pair Exposure:'}
+                ${isFr ? 'Paire de devises (Devise de base / Devise cotée) :' : 'Currency Pair (Base / Quote Currency):'}
               </label>
-              <select id="sim-pair-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 600;">
-                ${TRACKED_PAIRS.map(p => `
-                  <option value="${p.base + p.quote}" ${(p.base + p.quote) === simState.pair ? 'selected' : ''}>
-                    ${p.flag} ${p.name}
-                  </option>
-                `).join('')}
-              </select>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <select id="sim-base-ccy" style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 700;">
+                  ${CCY_CODES.map(c => `<option value="${c}" ${c === base ? 'selected' : ''}>${CCY_FLAGS[c] || ''} ${c}</option>`).join('')}
+                </select>
+                <button id="sim-swap-btn" style="padding: 6px 10px; background: #e2e8f0; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; font-weight: 800; cursor: pointer;" title="Inverser les devises">⇄</button>
+                <select id="sim-quote-ccy" style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 700;">
+                  ${CCY_CODES.map(c => `<option value="${c}" ${c === quote ? 'selected' : ''}>${CCY_FLAGS[c] || ''} ${c}</option>`).join('')}
+                </select>
+              </div>
             </div>
 
+            <!-- Direction -->
             <div>
               <label style="display: block; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
                 ${isFr ? 'Profil commercial de l\'entreprise :' : 'Corporate Trade Profile:'}
               </label>
               <select id="sim-direction-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 600;">
-                <option value="buy_foreign" ${simState.direction === 'buy_foreign' ? 'selected' : ''}>
-                  ${isFr ? `Importateur (Règlements fournisseurs en ${pair.quote})` : `Importer (Supplier Payables in ${pair.quote})`}
+                <option value="buy_foreign" ${isBuyForeign ? 'selected' : ''}>
+                  ${isFr ? `Importateur (Règlements fournisseurs en ${quote})` : `Importer (Supplier Payables in ${quote})`}
                 </option>
-                <option value="sell_foreign" ${simState.direction === 'sell_foreign' ? 'selected' : ''}>
-                  ${isFr ? `Exportateur (Encaissements clients en ${pair.quote})` : `Exporter (Client Receivables in ${pair.quote})`}
+                <option value="sell_foreign" ${!isBuyForeign ? 'selected' : ''}>
+                  ${isFr ? `Exportateur (Encaissements clients en ${quote})` : `Exporter (Client Receivables in ${quote})`}
                 </option>
               </select>
             </div>
 
+            <!-- Volume -->
             <div>
               <label style="display: block; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
-                ${isFr ? `Volume commercial à couvrir (${pair.quote}) :` : `Trade Volume to Hedge (${pair.quote}):`}
+                ${isFr ? `Volume commercial à couvrir (${quote}) :` : `Trade Volume to Hedge (${quote}):`}
               </label>
               <input type="number" id="sim-volume-input" value="${vol}" step="10000" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', monospace; font-weight: 700;">
             </div>
 
+            <!-- Taux Spot et Taux Couverture Revolut -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div>
+                <label style="display: block; font-size: 10.5px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">
+                  ${isFr ? 'Taux spot actuel :' : 'Current Spot Rate:'}
+                </label>
+                <input type="number" step="0.0001" id="sim-spot-input" value="${spotVal.toFixed(4)}" style="width: 100%; padding: 6px 8px; border: 1px solid #93c5fd; background: #eff6ff; border-radius: 4px; font-size: 12px; font-family: 'JetBrains Mono', monospace; font-weight: 700;">
+              </div>
+              <div>
+                <label style="display: block; font-size: 10.5px; font-weight: 700; color: #166534; margin-bottom: 4px;">
+                  ${isFr ? 'Taux proposé Revolut :' : 'Revolut Forward Rate:'}
+                </label>
+                <input type="number" step="0.0001" id="sim-forward-input" value="${fwdVal.toFixed(4)}" style="width: 100%; padding: 6px 8px; border: 1px solid #86efac; background: #f0fdf4; border-radius: 4px; font-size: 12px; font-family: 'JetBrains Mono', monospace; font-weight: 700;">
+              </div>
+            </div>
+
+            <!-- Horizon -->
             <div>
               <label style="display: block; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
                 ${isFr ? 'Horizon de couverture (Échéance) :' : 'Hedging Horizon (Maturity):'}
               </label>
               <select id="sim-horizon-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 600;">
-                <option value="3" ${simState.horizon === 3 ? 'selected' : ''}>3 mois (Trimestre T4)</option>
-                <option value="6" ${simState.horizon === 6 ? 'selected' : ''}>6 mois (Semestre T4-T1)</option>
+                <option value="3" ${simState.horizon === 3 ? 'selected' : ''}>3 mois (Court terme)</option>
+                <option value="6" ${simState.horizon === 6 ? 'selected' : ''}>6 mois (Moyen terme)</option>
                 <option value="12" ${simState.horizon === 12 ? 'selected' : ''}>12 mois (Budget Annuel)</option>
               </select>
             </div>
 
-            <div style="background: #eff6ff; border-radius: 6px; padding: 10px; font-size: 11px; color: #1e40af; border: 1px solid #bfdbfe;">
-              <strong>${isFr ? 'Cours spot de référence :' : 'Benchmark Spot Rate:'}</strong> ${currentSpot.toFixed(4)}<br>
-              <span style="font-size: 10px; color: #64748b;">${isFr ? 'Synchronisé en direct avec les marchés interbancaires.' : 'Live synchronized with interbank feeds.'}</span>
+            <!-- Slider % Risque de dérive -->
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="font-size: 11px; font-weight: 700; color: #991b1b;">
+                  ${isFr ? 'Hypothèse de dérive adverse du marché :' : 'Adverse Market Shift Assumption:'}
+                </label>
+                <span style="font-size: 12px; font-weight: 800; color: #dc2626; font-family: 'JetBrains Mono', monospace;" id="sim-drift-val">
+                  ${driftPct.toFixed(1)}%
+                </span>
+              </div>
+              <input type="range" id="sim-drift-range" min="1.0" max="10.0" step="0.5" value="${driftPct}" style="width: 100%; cursor: pointer;">
+              <div style="display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8; margin-top: 2px;">
+                <span>1% (Modéré)</span><span>5% (Volatile)</span><span>10% (Choc macro)</span>
+              </div>
             </div>
+
           </div>
 
           <!-- Results & ROI Dashboard -->
           <div style="display: flex; flex-direction: column; gap: 14px;">
-            <!-- Big ROI Cards -->
+            <!-- Big 3 Comparison Cards -->
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
               <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center;">
                 <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">
-                  ${isFr ? 'Budget au Cours Spot' : 'Budget at Spot'}
+                  ${isFr ? 'Budget au Taux Spot' : 'Budget at Spot'}
                 </div>
                 <div style="font-size: 20px; font-weight: 800; color: #1e3a8a; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">
-                  ${Math.round(costSpotEUR).toLocaleString()} €
+                  ${Math.round(costSpotEUR).toLocaleString()} ${base}
                 </div>
                 <div style="font-size: 10.5px; color: #64748b;">
-                  ${isFr ? 'Cours spot : ' + currentSpot.toFixed(4) : 'Spot: ' + currentSpot.toFixed(4)}
+                  Taux spot : <strong>${spotVal.toFixed(4)}</strong>
+                </div>
+              </div>
+
+              <div style="background: #f0fdf4; border: 2px solid #86efac; border-radius: 8px; padding: 14px; text-align: center; box-shadow: 0 2px 6px rgba(22,101,52,0.06);">
+                <div style="font-size: 11px; font-weight: 800; color: #166534; text-transform: uppercase;">
+                  ${isFr ? 'Budget Garanti Revolut' : 'Guaranteed Revolut Budget'}
+                </div>
+                <div style="font-size: 20px; font-weight: 900; color: #15803d; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">
+                  ${Math.round(costForwardEUR).toLocaleString()} ${base}
+                </div>
+                <div style="font-size: 10.5px; color: #166534; font-weight: 600;">
+                  Taux couverture : <strong>${fwdVal.toFixed(4)}</strong>
                 </div>
               </div>
 
               <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; text-align: center;">
                 <div style="font-size: 11px; font-weight: 700; color: #991b1b; text-transform: uppercase;">
-                  ${isFr ? 'Risque Dérive Marché (-3,2%)' : 'Adverse Shift (+3.2% Cost)'}
+                  ${isFr ? `Surcoût Sans Couverture (${driftPct.toFixed(1)}%)` : `Unhedged Overcost (${driftPct.toFixed(1)}%)`}
                 </div>
                 <div style="font-size: 20px; font-weight: 800; color: #dc2626; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">
-                  + ${Math.round(riskDiffEUR).toLocaleString()} €
+                  + ${Math.round(riskDiffEUR).toLocaleString()} ${base}
                 </div>
                 <div style="font-size: 10.5px; color: #b91c1c;">
-                  ${isFr ? 'Surcoût budgétaire non couvert' : 'Unhedged margin erosion'}
-                </div>
-              </div>
-
-              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px; text-align: center;">
-                <div style="font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase;">
-                  ${isFr ? 'Marge Sécurisée via Forward' : 'Protected Margin via Forward'}
-                </div>
-                <div style="font-size: 20px; font-weight: 800; color: #16a34a; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">
-                  ${Math.round(guaranteedSavings).toLocaleString()} €
-                </div>
-                <div style="font-size: 10.5px; color: #15803d; font-weight: 600;">
-                  ${isFr ? 'Budget 100% garanti Revolut' : '100% budget predictability'}
+                  Taux dégradé : <strong>${adverseRate.toFixed(4)}</strong>
                 </div>
               </div>
             </div>
@@ -568,13 +629,13 @@ window.MarketRadar = (() => {
             <!-- Detailed Explanation Box -->
             <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px;">
               <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #1e3a8a;">
-                💡 ${isFr ? 'Synthèse Commerciale & Formulation Prête à l\'Emploi :' : 'Commercial Pitch Ready to Send:'}
+                💡 ${isFr ? 'Argumentaire Commercial & Chiffrage Prêt à Envoyer :' : 'Client Financial Pitch Ready to Send:'}
               </h4>
               <div id="sim-pitch-text" style="font-size: 12px; line-height: 1.6; color: #334155; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
                 ${isFr ? `
-                  « En verrouillant dès aujourd'hui votre cours ${pair.name} pour vos engagements de <strong>${vol.toLocaleString()} ${pair.quote}</strong>, vous éliminez tout risque de dérive sur vos marges d'exploitation du T4 / T1. Une fluctuation adverse de seulement 3,2 % sur le cross représenterait un surcoût direct de <strong>${Math.round(riskDiffEUR).toLocaleString()} €</strong> sur votre compte de résultat. Notre contrat FX Forward flexible vous permet de figer votre cours plancher tout en conservant une souplesse de tirage au fil de vos besoins opérationnels. »
+                  « En verrouillant dès aujourd'hui votre cours ${pairName} à <strong>${fwdVal.toFixed(4)}</strong> pour vos engagements de <strong>${vol.toLocaleString()} ${quote}</strong>, vous éliminez tout risque de dérive sur vos marges d'exploitation. Une fluctuation adverse de ${driftPct.toFixed(1)} % sur la parité de devises engendrerait un surcoût direct de <strong>${Math.round(riskDiffEUR).toLocaleString()} ${base}</strong> sur votre résultat opérationnel. Notre contrat FX Forward vous permet de sécuriser jusqu'à <strong>${Math.round(guaranteedSavings).toLocaleString()} ${base}</strong> de marge avec une flexibilité totale de tirage. »
                 ` : `
-                  "By securing your ${pair.name} conversion today for your upcoming commitments of <strong>${vol.toLocaleString()} ${pair.quote}</strong>, you eliminate margin volatility across Q4 / Q1. An adverse shift of just 3.2% would add an unhedged cost burden of <strong>${Math.round(riskDiffEUR).toLocaleString()} €</strong> directly impacting your bottom-line. Revolut Business FX Forwards guarantee complete budget certainty while offering drawdown flexibility as cash flows require."
+                  "By locking your ${pairName} exchange rate at <strong>${fwdVal.toFixed(4)}</strong> today for your upcoming commitments of <strong>${vol.toLocaleString()} ${quote}</strong>, you eliminate margin uncertainty. An adverse currency fluctuation of ${driftPct.toFixed(1)}% would add an unhedged cost burden of <strong>${Math.round(riskDiffEUR).toLocaleString()} ${base}</strong> to your bottom-line. Revolut Business FX Forwards guarantee complete budget certainty, safeguarding up to <strong>${Math.round(guaranteedSavings).toLocaleString()} ${base}</strong> with flexible drawdown."
                 `}
               </div>
             </div>
@@ -783,8 +844,70 @@ window.MarketRadar = (() => {
     });
 
     // Simulator events
-    document.getElementById('sim-pair-select')?.addEventListener('change', (e) => {
-      simState.pair = e.target.value;
+    const updateSimRates = async (base, quote) => {
+      simState.base = base;
+      simState.quote = quote;
+      if (window.MarketData) {
+        try {
+          const res = await window.MarketData.getPair(base, quote);
+          if (res && res.rateVal) {
+            simState.spotRate = res.rateVal;
+            simState.forwardRate = parseFloat((res.rateVal * (1 - 0.002 * (simState.horizon / 6))).toFixed(4));
+          }
+        } catch (e) {
+          // If pair fetch fails, estimate or maintain
+          simState.spotRate = 1.0;
+          simState.forwardRate = 1.0;
+        }
+      }
+      const area = document.getElementById('content-area');
+      if (area) { area.innerHTML = renderPage(); bindEvents(); }
+    };
+
+    document.getElementById('sim-base-ccy')?.addEventListener('change', (e) => {
+      const newBase = e.target.value;
+      if (newBase === simState.quote) {
+        simState.quote = simState.base;
+      }
+      updateSimRates(newBase, simState.quote);
+    });
+
+    document.getElementById('sim-quote-ccy')?.addEventListener('change', (e) => {
+      const newQuote = e.target.value;
+      if (newQuote === simState.base) {
+        simState.base = simState.quote;
+      }
+      updateSimRates(simState.base, newQuote);
+    });
+
+    document.getElementById('sim-swap-btn')?.addEventListener('click', () => {
+      const prevBase = simState.base;
+      const prevQuote = simState.quote;
+      updateSimRates(prevQuote, prevBase);
+    });
+
+    document.getElementById('sim-spot-input')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val > 0) {
+        simState.spotRate = val;
+        // Adjust default forward rate proportionally if not customized
+        simState.forwardRate = parseFloat((val * (1 - 0.002 * (simState.horizon / 6))).toFixed(4));
+        const area = document.getElementById('content-area');
+        if (area) { area.innerHTML = renderPage(); bindEvents(); }
+      }
+    });
+
+    document.getElementById('sim-forward-input')?.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      if (!isNaN(val) && val > 0) {
+        simState.forwardRate = val;
+        const area = document.getElementById('content-area');
+        if (area) { area.innerHTML = renderPage(); bindEvents(); }
+      }
+    });
+
+    document.getElementById('sim-drift-range')?.addEventListener('input', (e) => {
+      simState.driftPct = parseFloat(e.target.value) || 3.0;
       const area = document.getElementById('content-area');
       if (area) { area.innerHTML = renderPage(); bindEvents(); }
     });
@@ -803,6 +926,9 @@ window.MarketRadar = (() => {
 
     document.getElementById('sim-horizon-select')?.addEventListener('change', (e) => {
       simState.horizon = parseInt(e.target.value, 10);
+      if (simState.spotRate) {
+        simState.forwardRate = parseFloat((simState.spotRate * (1 - 0.002 * (simState.horizon / 6))).toFixed(4));
+      }
       const area = document.getElementById('content-area');
       if (area) { area.innerHTML = renderPage(); bindEvents(); }
     });
