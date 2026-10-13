@@ -9,9 +9,17 @@ window.MarketRadar = (() => {
   'use strict';
 
   let currentLang = 'fr';
-  let activeTab = 'heatmap'; // 'heatmap' | 'radar' | 'commodities'
+  let activeTab = 'heatmap'; // 'heatmap' | 'radar' | 'commodities' | 'simulator' | 'calendar'
   let cachedQuotes = null;
+  let cachedCalendarEvents = null;
   let isLoading = false;
+  let simState = {
+    pair: 'EURUSD',
+    volume: 250000,
+    direction: 'buy_foreign', // 'buy_foreign' (importateur) | 'sell_foreign' (exportateur)
+    horizon: 6, // months
+    customRate: null
+  };
 
   // Major tracked cross pairs for heatmap & radar
   const TRACKED_PAIRS = [
@@ -421,6 +429,247 @@ window.MarketRadar = (() => {
     `;
   }
 
+  // ───────────────────────── POINT 1: SIMULATEUR FX FORWARDS & ROI ─────────────────────────
+  function renderSimulatorView() {
+    const isFr = currentLang === 'fr';
+    const pair = TRACKED_PAIRS.find(p => (p.base + p.quote) === simState.pair) || TRACKED_PAIRS[0];
+    const quoteData = cachedQuotes ? cachedQuotes.find(q => q.base === pair.base && q.quote === pair.quote) : null;
+    const currentSpot = simState.customRate || (quoteData && quoteData.rateVal ? quoteData.rateVal : 1.1203);
+    const vol = simState.volume || 250000;
+
+    // Assumptions for 6-month scenario:
+    // Adverse move (+2.5% adverse variation depending on buyer or seller)
+    // Favorable move (+2.5% favorable variation)
+    const isBuyForeign = simState.direction === 'buy_foreign';
+    // If buying foreign (importateur): paying more euros if pair drops (for EUR/USD) or foreign rises
+    // Cost in EUR at current spot
+    const costSpotEUR = vol / currentSpot;
+    // Scenario without hedging if market moves against client by 3.2%
+    const adverseRate = isBuyForeign ? currentSpot * 0.968 : currentSpot * 1.032;
+    const costAdverseEUR = vol / adverseRate;
+    const riskDiffEUR = Math.abs(costAdverseEUR - costSpotEUR);
+
+    // Forward locked cost (assuming small forward point adjustment approx 0.2%)
+    const forwardRate = currentSpot * 0.998;
+    const forwardCostEUR = vol / forwardRate;
+    const guaranteedSavings = Math.abs(costAdverseEUR - forwardCostEUR);
+
+    return `
+      <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #1e3a8a;">
+              ${isFr ? '🧮 Simulateur de Couverture de Change & ROI Client (FX Forwards)' : '🧮 FX Forward Hedging Simulator & Client ROI'}
+            </h3>
+            <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">
+              ${isFr ? 'Chiffrez immédiatement les économies et la protection de marge budgétaire pour vos rendez-vous et vos emails prospects.' : 'Instantly quantify margin protection and budget certainty for sales meetings and outreach.'}
+            </p>
+          </div>
+          <button id="copy-sim-pitch-btn" class="btn btn-secondary btn-sm" style="font-size: 11px; padding: 6px 12px;">
+            📋 ${isFr ? 'Copier le Pitch Chiffré pour Email' : 'Copy Pitch Snippet for Email'}
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 340px 1fr; gap: 24px;">
+          <!-- Controls Panel -->
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
+                ${isFr ? 'Paire de devises exposée :' : 'Currency Pair Exposure:'}
+              </label>
+              <select id="sim-pair-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                ${TRACKED_PAIRS.map(p => `
+                  <option value="${p.base + p.quote}" ${(p.base + p.quote) === simState.pair ? 'selected' : ''}>
+                    ${p.flag} ${p.name}
+                  </option>
+                `).join('')}
+              </select>
+            </div>
+
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
+                ${isFr ? 'Profil commercial de l\'entreprise :' : 'Corporate Trade Profile:'}
+              </label>
+              <select id="sim-direction-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                <option value="buy_foreign" ${simState.direction === 'buy_foreign' ? 'selected' : ''}>
+                  ${isFr ? `Importateur (Règlements fournisseurs en ${pair.quote})` : `Importer (Supplier Payables in ${pair.quote})`}
+                </option>
+                <option value="sell_foreign" ${simState.direction === 'sell_foreign' ? 'selected' : ''}>
+                  ${isFr ? `Exportateur (Encaissements clients en ${pair.quote})` : `Exporter (Client Receivables in ${pair.quote})`}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
+                ${isFr ? `Volume commercial à couvrir (${pair.quote}) :` : `Trade Volume to Hedge (${pair.quote}):`}
+              </label>
+              <input type="number" id="sim-volume-input" value="${vol}" step="10000" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', monospace; font-weight: 700;">
+            </div>
+
+            <div>
+              <label style="display: block; font-size: 11px; font-weight: 700; color: #334155; margin-bottom: 4px;">
+                ${isFr ? 'Horizon de couverture (Échéance) :' : 'Hedging Horizon (Maturity):'}
+              </label>
+              <select id="sim-horizon-select" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                <option value="3" ${simState.horizon === 3 ? 'selected' : ''}>3 mois (Trimestre T4)</option>
+                <option value="6" ${simState.horizon === 6 ? 'selected' : ''}>6 mois (Semestre T4-T1)</option>
+                <option value="12" ${simState.horizon === 12 ? 'selected' : ''}>12 mois (Budget Annuel)</option>
+              </select>
+            </div>
+
+            <div style="background: #eff6ff; border-radius: 6px; padding: 10px; font-size: 11px; color: #1e40af; border: 1px solid #bfdbfe;">
+              <strong>${isFr ? 'Cours spot de référence :' : 'Benchmark Spot Rate:'}</strong> ${currentSpot.toFixed(4)}<br>
+              <span style="font-size: 10px; color: #64748b;">${isFr ? 'Synchronisé en direct avec les marchés interbancaires.' : 'Live synchronized with interbank feeds.'}</span>
+            </div>
+          </div>
+
+          <!-- Results & ROI Dashboard -->
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <!-- Big ROI Cards -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;">
+                  ${isFr ? 'Budget au Cours Spot' : 'Budget at Spot'}
+                </div>
+                <div style="font-size: 20px; font-weight: 800; color: #1e3a8a; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">
+                  ${Math.round(costSpotEUR).toLocaleString()} €
+                </div>
+                <div style="font-size: 10.5px; color: #64748b;">
+                  ${isFr ? 'Cours spot : ' + currentSpot.toFixed(4) : 'Spot: ' + currentSpot.toFixed(4)}
+                </div>
+              </div>
+
+              <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: #991b1b; text-transform: uppercase;">
+                  ${isFr ? 'Risque Dérive Marché (-3,2%)' : 'Adverse Shift (+3.2% Cost)'}
+                </div>
+                <div style="font-size: 20px; font-weight: 800; color: #dc2626; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">
+                  + ${Math.round(riskDiffEUR).toLocaleString()} €
+                </div>
+                <div style="font-size: 10.5px; color: #b91c1c;">
+                  ${isFr ? 'Surcoût budgétaire non couvert' : 'Unhedged margin erosion'}
+                </div>
+              </div>
+
+              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px; text-align: center;">
+                <div style="font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase;">
+                  ${isFr ? 'Marge Sécurisée via Forward' : 'Protected Margin via Forward'}
+                </div>
+                <div style="font-size: 20px; font-weight: 800; color: #16a34a; font-family: 'JetBrains Mono', monospace; margin: 6px 0;">
+                  ${Math.round(guaranteedSavings).toLocaleString()} €
+                </div>
+                <div style="font-size: 10.5px; color: #15803d; font-weight: 600;">
+                  ${isFr ? 'Budget 100% garanti Revolut' : '100% budget predictability'}
+                </div>
+              </div>
+            </div>
+
+            <!-- Detailed Explanation Box -->
+            <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 16px;">
+              <h4 style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; color: #1e3a8a;">
+                💡 ${isFr ? 'Synthèse Commerciale & Formulation Prête à l\'Emploi :' : 'Commercial Pitch Ready to Send:'}
+              </h4>
+              <div id="sim-pitch-text" style="font-size: 12px; line-height: 1.6; color: #334155; background: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">
+                ${isFr ? `
+                  « En verrouillant dès aujourd'hui votre cours ${pair.name} pour vos engagements de <strong>${vol.toLocaleString()} ${pair.quote}</strong>, vous éliminez tout risque de dérive sur vos marges d'exploitation du T4 / T1. Une fluctuation adverse de seulement 3,2 % sur le cross représenterait un surcoût direct de <strong>${Math.round(riskDiffEUR).toLocaleString()} €</strong> sur votre compte de résultat. Notre contrat FX Forward flexible vous permet de figer votre cours plancher tout en conservant une souplesse de tirage au fil de vos besoins opérationnels. »
+                ` : `
+                  "By securing your ${pair.name} conversion today for your upcoming commitments of <strong>${vol.toLocaleString()} ${pair.quote}</strong>, you eliminate margin volatility across Q4 / Q1. An adverse shift of just 3.2% would add an unhedged cost burden of <strong>${Math.round(riskDiffEUR).toLocaleString()} €</strong> directly impacting your bottom-line. Revolut Business FX Forwards guarantee complete budget certainty while offering drawdown flexibility as cash flows require."
+                `}
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-primary open-email-templates-btn" style="flex: 1; padding: 10px; font-size: 12px; font-weight: 700;">
+                ✉️ ${isFr ? 'Insérer ce scénario dans un Email Commercial →' : 'Insert this Scenario into Sales Email →'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ───────────────────────── POINT 4: CALENDRIER ÉCONOMIQUE INTERACTIF ─────────────────────────
+  async function loadCalendarEvents() {
+    if (cachedCalendarEvents) return cachedCalendarEvents;
+    const M = window.MarketData;
+    if (!M) return [];
+    try {
+      const all = await M.getCalendar();
+      cachedCalendarEvents = all || [];
+      return cachedCalendarEvents;
+    } catch (e) {
+      console.warn('Calendar loading error:', e);
+      return [];
+    }
+  }
+
+  function renderCalendarView() {
+    const isFr = currentLang === 'fr';
+    const events = cachedCalendarEvents || [];
+
+    return `
+      <div style="background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <h3 style="margin: 0; font-size: 16px; font-weight: 800; color: #1e3a8a;">
+              ${isFr ? '📅 Calendrier Économique Interactif & Filtre par Devise' : '📅 Interactive Economic Calendar & Currency Filter'}
+            </h3>
+            <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">
+              ${isFr ? 'Préparez votre prospection commerciale en identifiant les annonces à fort impact (BCE, Fed, BNS, NBP, CPI, NFP).' : 'Prepare weekly sales outreach by pinpointing high-impact risk catalysts (ECB, Fed, SNB, NBP, CPI, NFP).'}
+            </p>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="cal-impact-filter" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: 600;">
+              <option value="ALL">${isFr ? 'Tous les impacts' : 'All Impacts'}</option>
+              <option value="High" selected>${isFr ? 'Impact Élevé Uniquement (High)' : 'High Impact Only'}</option>
+              <option value="Medium">${isFr ? 'Impact Moyen (Medium)' : 'Medium Impact'}</option>
+            </select>
+            <select id="cal-ccy-filter" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; font-weight: 600;">
+              <option value="ALL">${isFr ? 'Toutes les devises' : 'All Currencies'}</option>
+              <option value="EUR">🇪🇺 EUR</option>
+              <option value="USD">🇺🇸 USD</option>
+              <option value="GBP">🇬🇧 GBP</option>
+              <option value="CHF">🇨🇭 CHF</option>
+              <option value="JPY">🇯🇵 JPY</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Events List -->
+        <div id="cal-events-container" style="display: flex; flex-direction: column; gap: 8px;">
+          ${events.length === 0 ? `
+            <div style="padding: 30px; text-align: center; color: #64748b; font-size: 13px;">
+              ⏳ ${isFr ? 'Chargement du calendrier ForexFactory en cours...' : 'Loading ForexFactory economic calendar...'}
+            </div>
+          ` : events.map(e => `
+            <div class="cal-event-row" data-impact="${e.impact}" data-country="${e.country}" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 6px; background: ${e.impact === 'High' ? '#fef2f2' : '#fffbeb'}; border-left: 4px solid ${e.impact === 'High' ? '#dc2626' : '#f59e0b'}; border: 1px solid #e2e8f0;">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="text-align: center; width: 50px;">
+                  <div style="font-size: 12px; font-weight: 800; color: #1e3a8a;">${e.dateStr}</div>
+                  <div style="font-size: 9.5px; color: #64748b; font-weight: 600;">${e.time}</div>
+                </div>
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 800; color: #1e293b;">
+                  ${e.country}
+                </div>
+                <div>
+                  <div style="font-size: 12.5px; font-weight: 700; color: #1e293b;">${e.title}</div>
+                  <div style="font-size: 10px; color: #64748b;">
+                    ${isFr ? 'Impact attendu : ' + (e.impact === 'High' ? 'Élevé (Forte volatilité potentielle)' : 'Moyen') : 'Expected impact: ' + e.impact}
+                  </div>
+                </div>
+              </div>
+              <button class="btn btn-outline btn-sm copy-event-alert-btn" data-event="${e.title}" data-country="${e.country}" data-date="${e.dateStr} à ${e.time}" style="font-size: 11px; padding: 4px 10px;">
+                ⚡ ${isFr ? 'Créer Alerte Client' : 'Create Client Alert'}
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
   function renderPage() {
     const isFr = currentLang === 'fr';
 
@@ -433,20 +682,26 @@ window.MarketRadar = (() => {
               ${isFr ? 'MATRICE DE MARCHÉ & RADAR TECHNIQUE' : 'MARKET MATRIX & TECHNICAL RADAR'}
             </h1>
             <p style="margin: 4px 0 0; font-size: 12px; color: #64748b;">
-              ${isFr ? 'Surveillance multi-devises en direct, corrélations matières premières et déclencheurs de couverture client.' : 'Live multi-currency monitoring, commodity correlations, and client FX hedging triggers.'}
+              ${isFr ? 'Surveillance multi-devises en direct, simulateur FX Forwards, calendrier interactif et déclencheurs de couverture.' : 'Live multi-currency monitoring, FX Forwards simulator, interactive calendar, and hedging triggers.'}
             </p>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
             <!-- Tab Switcher -->
-            <div class="btn-group" style="display: flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
-              <button class="radar-tab-btn ${activeTab === 'heatmap' ? 'active' : ''}" data-tab="heatmap" style="padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; background: ${activeTab === 'heatmap' ? '#1e3a8a' : '#ffffff'}; color: ${activeTab === 'heatmap' ? '#ffffff' : '#475569'};">
-                🌡️ ${isFr ? 'Heatmap Multi-Devises' : 'Multi-Currency Heatmap'}
+            <div class="btn-group" style="display: flex; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; flex-wrap: wrap;">
+              <button class="radar-tab-btn ${activeTab === 'heatmap' ? 'active' : ''}" data-tab="heatmap" style="padding: 6px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; border: none; background: ${activeTab === 'heatmap' ? '#1e3a8a' : '#ffffff'}; color: ${activeTab === 'heatmap' ? '#ffffff' : '#475569'};">
+                🌡️ Heatmap
               </button>
-              <button class="radar-tab-btn ${activeTab === 'radar' ? 'active' : ''}" data-tab="radar" style="padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; background: ${activeTab === 'radar' ? '#1e3a8a' : '#ffffff'}; color: ${activeTab === 'radar' ? '#ffffff' : '#475569'}; border-left: 1px solid #cbd5e1;">
-                🎯 ${isFr ? 'Radar & Seuils Clés' : 'Radar & Thresholds'}
+              <button class="radar-tab-btn ${activeTab === 'simulator' ? 'active' : ''}" data-tab="simulator" style="padding: 6px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; border: none; background: ${activeTab === 'simulator' ? '#1e3a8a' : '#ffffff'}; color: ${activeTab === 'simulator' ? '#ffffff' : '#475569'}; border-left: 1px solid #cbd5e1;">
+                🧮 ${isFr ? 'Simulateur Forwards & ROI' : 'Forwards Simulator & ROI'}
               </button>
-              <button class="radar-tab-btn ${activeTab === 'commodities' ? 'active' : ''}" data-tab="commodities" style="padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; background: ${activeTab === 'commodities' ? '#1e3a8a' : '#ffffff'}; color: ${activeTab === 'commodities' ? '#ffffff' : '#475569'}; border-left: 1px solid #cbd5e1;">
+              <button class="radar-tab-btn ${activeTab === 'calendar' ? 'active' : ''}" data-tab="calendar" style="padding: 6px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; border: none; background: ${activeTab === 'calendar' ? '#1e3a8a' : '#ffffff'}; color: ${activeTab === 'calendar' ? '#ffffff' : '#475569'}; border-left: 1px solid #cbd5e1;">
+                📅 ${isFr ? 'Calendrier Éco' : 'Eco Calendar'}
+              </button>
+              <button class="radar-tab-btn ${activeTab === 'radar' ? 'active' : ''}" data-tab="radar" style="padding: 6px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; border: none; background: ${activeTab === 'radar' ? '#1e3a8a' : '#ffffff'}; color: ${activeTab === 'radar' ? '#ffffff' : '#475569'}; border-left: 1px solid #cbd5e1;">
+                🎯 ${isFr ? 'Radar Seuils' : 'Thresholds'}
+              </button>
+              <button class="radar-tab-btn ${activeTab === 'commodities' ? 'active' : ''}" data-tab="commodities" style="padding: 6px 12px; font-size: 11.5px; font-weight: 700; cursor: pointer; border: none; background: ${activeTab === 'commodities' ? '#1e3a8a' : '#ffffff'}; color: ${activeTab === 'commodities' ? '#ffffff' : '#475569'}; border-left: 1px solid #cbd5e1;">
                 🛢️ ${isFr ? 'Pétrole & Taux' : 'Oil & Yields'}
               </button>
             </div>
@@ -461,14 +716,18 @@ window.MarketRadar = (() => {
 
         <!-- Tab Body Content -->
         <div id="radar-tab-content">
-          ${activeTab === 'heatmap' ? renderHeatmapView() : activeTab === 'radar' ? renderRadarAlertsView() : renderCommoditiesView()}
+          ${activeTab === 'heatmap' ? renderHeatmapView() :
+            activeTab === 'simulator' ? renderSimulatorView() :
+            activeTab === 'calendar' ? renderCalendarView() :
+            activeTab === 'radar' ? renderRadarAlertsView() :
+            renderCommoditiesView()}
         </div>
       </div>
     `;
   }
 
   function initPage() {
-    loadMarketRates().then(() => {
+    Promise.allSettled([loadMarketRates(), loadCalendarEvents()]).then(() => {
       const area = document.getElementById('content-area');
       if (area && area.querySelector('.market-radar-container')) {
         area.innerHTML = renderPage();
@@ -520,6 +779,68 @@ window.MarketRadar = (() => {
           bindEvents();
           App.showToast(currentLang === 'fr' ? 'Matrice actualisée avec succès !' : 'Matrix updated successfully!', 'success');
         }
+      });
+    });
+
+    // Simulator events
+    document.getElementById('sim-pair-select')?.addEventListener('change', (e) => {
+      simState.pair = e.target.value;
+      const area = document.getElementById('content-area');
+      if (area) { area.innerHTML = renderPage(); bindEvents(); }
+    });
+
+    document.getElementById('sim-direction-select')?.addEventListener('change', (e) => {
+      simState.direction = e.target.value;
+      const area = document.getElementById('content-area');
+      if (area) { area.innerHTML = renderPage(); bindEvents(); }
+    });
+
+    document.getElementById('sim-volume-input')?.addEventListener('input', (e) => {
+      simState.volume = parseFloat(e.target.value) || 0;
+      const area = document.getElementById('content-area');
+      if (area) { area.innerHTML = renderPage(); bindEvents(); }
+    });
+
+    document.getElementById('sim-horizon-select')?.addEventListener('change', (e) => {
+      simState.horizon = parseInt(e.target.value, 10);
+      const area = document.getElementById('content-area');
+      if (area) { area.innerHTML = renderPage(); bindEvents(); }
+    });
+
+    document.getElementById('copy-sim-pitch-btn')?.addEventListener('click', () => {
+      const text = document.getElementById('sim-pitch-text')?.innerText || '';
+      navigator.clipboard.writeText(text).then(() => {
+        App.showToast(currentLang === 'fr' ? 'Argumentaire chiffré copié !' : 'Calculated pitch copied!', 'success');
+      });
+    });
+
+    // Calendar filters
+    const filterCal = () => {
+      const imp = document.getElementById('cal-impact-filter')?.value || 'ALL';
+      const ccy = document.getElementById('cal-ccy-filter')?.value || 'ALL';
+      document.querySelectorAll('.cal-event-row').forEach(row => {
+        const rImp = row.dataset.impact;
+        const rCcy = row.dataset.country;
+        const matchImp = imp === 'ALL' || rImp === imp;
+        const matchCcy = ccy === 'ALL' || rCcy === ccy;
+        row.style.display = matchImp && matchCcy ? 'flex' : 'none';
+      });
+    };
+    document.getElementById('cal-impact-filter')?.addEventListener('change', filterCal);
+    document.getElementById('cal-ccy-filter')?.addEventListener('change', filterCal);
+
+    document.querySelectorAll('.copy-event-alert-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const ev = e.currentTarget.dataset.event;
+        const ccy = e.currentTarget.dataset.country;
+        const dt = e.currentTarget.dataset.date;
+        const isFr = currentLang === 'fr';
+        const text = isFr
+          ? `[Flash Alerte Marché — ${ccy}]\nÉvènement clé à surveiller : ${ev}\nDate & Heure : ${dt}\nConséquence trésorerie : Risque d'accélération de la volatilité sur les flux de change. Contactez-nous pour modéliser une couverture préalable via Revolut Business.`
+          : `[Market Risk Flash — ${ccy}]\nKey catalyst to watch: ${ev}\nDate & Time: ${dt}\nTreasury implication: Heightened FX volatility expected. Connect with Revolut Business to model proactive hedging lines.`;
+        navigator.clipboard.writeText(text).then(() => {
+          App.showToast(isFr ? `Alerte pour ${ev} copiée !` : `Alert for ${ev} copied!`, 'success');
+        });
       });
     });
 
