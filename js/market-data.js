@@ -57,9 +57,10 @@
   }
 
   async function viaProxy(url) {
+    try { return await fetchText(url, 3000); } catch (_) {}
     let lastErr = new Error('no proxy');
     for (const p of PROXIES) {
-      try { return await fetchText(p(url)); } catch (e) { lastErr = e; }
+      try { return await fetchText(p(url), 4000); } catch (e) { lastErr = e; }
     }
     throw lastErr;
   }
