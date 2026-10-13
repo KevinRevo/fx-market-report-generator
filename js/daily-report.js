@@ -979,36 +979,10 @@ window.DailyReport = (() => {
 
   async function downloadInfographicImage() {
     const el = document.getElementById('report-two-pages');
-    if (!el) {
-      App.showToast('Élément introuvable.', 'error');
-      return;
-    }
-
-    App.showToast('Génération de l\'infographie haute résolution en cours...', 'info', 4000);
-
-    try {
-      const prevDir = el.style.flexDirection;
-      el.style.flexDirection = 'row'; // Force side-by-side for export
-
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#94a3b8',
-        logging: false
-      });
-
-      el.style.flexDirection = prevDir;
-
-      const imageURL = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `DAILY_FX_MACRO_REPORT_${reportData.dateIso}_${currentLang.toUpperCase()}.png`;
-      link.href = imageURL;
-      link.click();
-
-      App.showToast('Infographie téléchargée avec succès !', 'success');
-    } catch (err) {
-      console.error('Image export failed:', err);
+    const filename = `DAILY_FX_MACRO_REPORT_${reportData.dateIso}_${currentLang.toUpperCase()}.png`;
+    if (window.ReportExport) {
+      await window.ReportExport.exportElementToPNG(el, filename, printReport);
+    } else {
       printReport();
     }
   }
