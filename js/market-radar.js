@@ -24,21 +24,34 @@ window.MarketRadar = (() => {
     driftPct: 3.0
   };
 
-  // Major tracked cross pairs for heatmap & radar
+  // Major tracked cross pairs for heatmap & radar (both base and quote directions)
   const TRACKED_PAIRS = [
     { base: 'EUR', quote: 'USD', name: 'EUR/USD', flag: '🇪🇺/🇺🇸', group: 'Majors' },
+    { base: 'USD', quote: 'EUR', name: 'USD/EUR', flag: '🇺🇸/🇪🇺', group: 'Majors' },
     { base: 'EUR', quote: 'CHF', name: 'EUR/CHF', flag: '🇪🇺/🇨🇭', group: 'G10' },
+    { base: 'CHF', quote: 'EUR', name: 'CHF/EUR', flag: '🇨🇭/🇪🇺', group: 'G10' },
     { base: 'CHF', quote: 'USD', name: 'CHF/USD', flag: '🇨🇭/🇺🇸', group: 'G10' },
+    { base: 'USD', quote: 'CHF', name: 'USD/CHF', flag: '🇺🇸/🇨🇭', group: 'G10' },
     { base: 'EUR', quote: 'GBP', name: 'EUR/GBP', flag: '🇪🇺/🇬🇧', group: 'G10' },
+    { base: 'GBP', quote: 'EUR', name: 'GBP/EUR', flag: '🇬🇧/🇪🇺', group: 'G10' },
     { base: 'GBP', quote: 'USD', name: 'GBP/USD', flag: '🇬🇧/🇺🇸', group: 'Majors' },
+    { base: 'USD', quote: 'GBP', name: 'USD/GBP', flag: '🇺🇸/🇬🇧', group: 'Majors' },
     { base: 'EUR', quote: 'PLN', name: 'EUR/PLN', flag: '🇪🇺/🇵🇱', group: 'CEE' },
+    { base: 'PLN', quote: 'EUR', name: 'PLN/EUR', flag: '🇵🇱/🇪🇺', group: 'CEE' },
     { base: 'USD', quote: 'PLN', name: 'USD/PLN', flag: '🇺🇸/🇵🇱', group: 'CEE' },
+    { base: 'PLN', quote: 'USD', name: 'PLN/USD', flag: '🇵🇱/🇺🇸', group: 'CEE' },
     { base: 'CZK', quote: 'USD', name: 'CZK/USD', flag: '🇨🇿/🇺🇸', group: 'CEE' },
+    { base: 'USD', quote: 'CZK', name: 'USD/CZK', flag: '🇺🇸/🇨🇿', group: 'CEE' },
     { base: 'EUR', quote: 'CZK', name: 'EUR/CZK', flag: '🇪🇺/🇨🇿', group: 'CEE' },
+    { base: 'CZK', quote: 'EUR', name: 'CZK/EUR', flag: '🇨🇿/🇪🇺', group: 'CEE' },
     { base: 'USD', quote: 'HUF', name: 'USD/HUF', flag: '🇺🇸/🇭🇺', group: 'CEE' },
+    { base: 'HUF', quote: 'USD', name: 'HUF/USD', flag: '🇭🇺/🇺🇸', group: 'CEE' },
     { base: 'EUR', quote: 'HUF', name: 'EUR/HUF', flag: '🇪🇺/🇭🇺', group: 'CEE' },
+    { base: 'HUF', quote: 'EUR', name: 'HUF/EUR', flag: '🇭🇺/🇪🇺', group: 'CEE' },
     { base: 'EUR', quote: 'SEK', name: 'EUR/SEK', flag: '🇪🇺/🇸🇪', group: 'Nordics' },
-    { base: 'EUR', quote: 'NOK', name: 'EUR/NOK', flag: '🇪🇺/🇳🇴', group: 'Nordics' }
+    { base: 'SEK', quote: 'EUR', name: 'SEK/EUR', flag: '🇸🇪/🇪🇺', group: 'Nordics' },
+    { base: 'EUR', quote: 'NOK', name: 'EUR/NOK', flag: '🇪🇺/🇳🇴', group: 'Nordics' },
+    { base: 'NOK', quote: 'EUR', name: 'NOK/EUR', flag: '🇳🇴/🇪🇺', group: 'Nordics' }
   ];
 
   // Key Technical Alert Thresholds (Sensitivities & Triggers)
@@ -112,6 +125,62 @@ window.MarketRadar = (() => {
       triggerNoticeEn: 'Consolidation at 4.3850: Zloty balances attractive 5.75% carry against regional energy inflation headwinds.',
       salesAngleFr: 'Niveau optimal pour les trésoriers payant en PLN pour bloquer un cours plancher compétitif.',
       salesAngleEn: 'Ideal timing for treasurers with PLN payables to lock attractive conversion floors.'
+    },
+    {
+      pair: 'CHF/USD',
+      base: 'CHF',
+      quote: 'USD',
+      flag: '🇨🇭/🇺🇸',
+      supportAlert: 1.1850,
+      resistanceAlert: 1.2150,
+      correlCommodity: 'Or ($2685/oz) & Aversion au risque',
+      correlYield: 'Taux BNS (0,00%) vs Fed (3,75-4,00%)',
+      triggerNoticeFr: 'Oscillation autour de 1,1980 : arbitrage entre attrait monétaire du billet vert et statut refuge suisse.',
+      triggerNoticeEn: 'Trading near 1.1980: arbitrage between US monetary carry and structural safe-haven Swiss demand.',
+      salesAngleFr: 'Verrouiller les cours d\'achat USD pour les groupes suisses exportateurs via des contrats à terme flexibles.',
+      salesAngleEn: 'Lock USD buy levels for Swiss export-oriented corporates via flexible FX Forwards.'
+    },
+    {
+      pair: 'USD/HUF',
+      base: 'USD',
+      quote: 'HUF',
+      flag: '🇺🇸/🇭🇺',
+      supportAlert: 320.00,
+      resistanceAlert: 332.00,
+      correlCommodity: 'Facture énergétique hongroise',
+      correlYield: 'Cycle d\'assouplissement MNB vs Fed',
+      triggerNoticeFr: 'Pression haussière sur USD/HUF (> 325,00) : sensibilité du Forint aux baisses de taux MNB et fermeté du dollar.',
+      triggerNoticeEn: 'Upward pressure on USD/HUF (> 325.00): Forint sensitivity to MNB rate easing amid broad USD resilience.',
+      salesAngleFr: 'Proposer une couverture Forint sur 6-12 mois pour prémunir les filiales industrielles contre la dépréciation locale.',
+      salesAngleEn: 'Structure 6 to 12-month Forint hedging to protect European subsidiaries against local currency softening.'
+    },
+    {
+      pair: 'EUR/GBP',
+      base: 'EUR',
+      quote: 'GBP',
+      flag: '🇪🇺/🇬🇧',
+      supportAlert: 0.8500,
+      resistanceAlert: 0.8700,
+      correlCommodity: 'Commerce transmanche & Inflation services UK',
+      correlYield: 'Différentiel BCE (2,50%) vs BoE (4,75%)',
+      triggerNoticeFr: 'Pression persistante sur EUR/GBP : portage BoE favorable à la Livre Sterling face à l\'Euro.',
+      triggerNoticeEn: 'Persistent pressure on EUR/GBP: Bank of England rate premium structurally supports Sterling vs Euro.',
+      salesAngleFr: 'Sécuriser le budget de conversion GBP pour les importateurs européens vers le Royaume-Uni.',
+      salesAngleEn: 'Secure GBP budget conversion lines for European exporters and UK supply chain managers.'
+    },
+    {
+      pair: 'GBP/USD',
+      base: 'GBP',
+      quote: 'USD',
+      flag: '🇬🇧/🇺🇸',
+      supportAlert: 1.2850,
+      resistanceAlert: 1.3250,
+      correlCommodity: 'Brent Crude & Rendements Gilt/Treasury',
+      correlYield: 'BoE (4,75%) vs Fed (3,75-4,00%)',
+      triggerNoticeFr: 'Consolidation autour de 1,3050 : réajustement des anticipations de politique monétaire BoE/Fed.',
+      triggerNoticeEn: 'Consolidation near 1.3050: monetary policy expectation adjustments between BoE and Federal Reserve.',
+      salesAngleFr: 'Bloquer les cours GBP/USD pour les flux corporate transatlantiques via FX Forwards.',
+      salesAngleEn: 'Lock GBP/USD conversion levels for transatlantic corporate trade flows.'
     }
   ];
 
@@ -267,46 +336,34 @@ window.MarketRadar = (() => {
               </tr>
             </thead>
             <tbody>
-              <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 8px 12px; font-weight: 700;">EUR/USD</td>
-                <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e3a8a;">1.1203</td>
-                <td style="padding: 8px 12px; text-align: center; color: #dc2626; font-weight: 700;">-0.28%</td>
-                <td style="padding: 8px 12px; text-align: center; color: #dc2626; font-weight: 700;">-0.65%</td>
-                <td style="padding: 8px 12px; color: #475569;">BCE 2.50% vs Fed 3.75-4.00% (-137 pb)</td>
-                <td style="padding: 8px 12px;"><span style="background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px;">Défavorable EUR</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid #f1f5f9; background: #fafafa;">
-                <td style="padding: 8px 12px; font-weight: 700;">EUR/CHF</td>
-                <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e3a8a;">0.9360</td>
-                <td style="padding: 8px 12px; text-align: center; color: #dc2626; font-weight: 700;">-0.12%</td>
-                <td style="padding: 8px 12px; text-align: center; color: #dc2626; font-weight: 700;">-0.45%</td>
-                <td style="padding: 8px 12px; color: #475569;">BCE 2.50% vs BNS 0.00% (+250 pb)</td>
-                <td style="padding: 8px 12px;"><span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px;">Refuge CHF compense</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid #f1f5f9;">
-                <td style="padding: 8px 12px; font-weight: 700;">USD/PLN</td>
-                <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e3a8a;">3.8920</td>
-                <td style="padding: 8px 12px; text-align: center; color: #16a34a; font-weight: 700;">+0.42%</td>
-                <td style="padding: 8px 12px; text-align: center; color: #16a34a; font-weight: 700;">+1.20%</td>
-                <td style="padding: 8px 12px; color: #475569;">Fed 3.875% vs NBP 5.75% (-187 pb)</td>
-                <td style="padding: 8px 12px;"><span style="background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px;">Portage PLN élevé</span></td>
-              </tr>
-              <tr style="border-bottom: 1px solid #f1f5f9; background: #fafafa;">
-                <td style="padding: 8px 12px; font-weight: 700;">EUR/PLN</td>
-                <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e3a8a;">4.3850</td>
-                <td style="padding: 8px 12px; text-align: center; color: #16a34a; font-weight: 700;">+0.15%</td>
-                <td style="padding: 8px 12px; text-align: center; color: #16a34a; font-weight: 700;">+0.35%</td>
-                <td style="padding: 8px 12px; color: #475569;">BCE 2.50% vs NBP 5.75% (-325 pb)</td>
-                <td style="padding: 8px 12px;"><span style="background: #dcfce7; color: #166534; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px;">Fort avantage PLN</span></td>
-              </tr>
-              <tr>
-                <td style="padding: 8px 12px; font-weight: 700;">CZK/USD</td>
-                <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e3a8a;">0.0430</td>
-                <td style="padding: 8px 12px; text-align: center; color: #dc2626; font-weight: 700;">-0.35%</td>
-                <td style="padding: 8px 12px; text-align: center; color: #dc2626; font-weight: 700;">-0.80%</td>
-                <td style="padding: 8px 12px; color: #475569;">CNB 3.75% vs Fed 3.75-4.00% (-12 pb)</td>
-                <td style="padding: 8px 12px;"><span style="background: #fee2e2; color: #991b1b; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px;">Avantage Dollar</span></td>
-              </tr>
+              ${quotes.map((q, idx) => {
+                const M = window.MarketData;
+                const baseCb = M ? M.cbName(q.base, currentLang) : q.base;
+                const quoteCb = M ? M.cbName(q.quote, currentLang) : q.quote;
+                const d1Color = getTextColor(q.d1Pct);
+                const w1Color = getTextColor(q.w1Pct);
+                const bg = idx % 2 === 1 ? '#fafafa' : '#ffffff';
+                const isCarryPositive = (q.d1Pct || 0) >= 0;
+
+                return `
+                  <tr style="border-bottom: 1px solid #f1f5f9; background: ${bg};">
+                    <td style="padding: 8px 12px; font-weight: 700;">
+                      <span style="margin-right: 6px;">${q.flag}</span>${q.name}
+                    </td>
+                    <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-weight: 700; color: #1e3a8a;">${q.rate}</td>
+                    <td style="padding: 8px 12px; text-align: center; color: ${d1Color}; font-weight: 700; font-family: 'JetBrains Mono', monospace;">${q.d1Str}</td>
+                    <td style="padding: 8px 12px; text-align: center; color: ${w1Color}; font-weight: 700; font-family: 'JetBrains Mono', monospace;">${q.w1Str}</td>
+                    <td style="padding: 8px 12px; color: #475569; font-size: 10.5px;">
+                      ${baseCb} vs ${quoteCb}
+                    </td>
+                    <td style="padding: 8px 12px;">
+                      <span style="background: ${isCarryPositive ? '#dcfce7' : '#fee2e2'}; color: ${isCarryPositive ? '#166534' : '#991b1b'}; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px;">
+                        ${isCarryPositive ? (isFr ? 'Fermeté ' + q.base : q.base + ' strength') : (isFr ? 'Fermeté ' + q.quote : q.quote + ' strength')}
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
             </tbody>
           </table>
         </div>
@@ -693,6 +750,11 @@ window.MarketRadar = (() => {
               <option value="USD">🇺🇸 USD</option>
               <option value="GBP">🇬🇧 GBP</option>
               <option value="CHF">🇨🇭 CHF</option>
+              <option value="PLN">🇵🇱 PLN</option>
+              <option value="CZK">🇨🇿 CZK</option>
+              <option value="HUF">🇭🇺 HUF</option>
+              <option value="NOK">🇳🇴 NOK</option>
+              <option value="SEK">🇸🇪 SEK</option>
               <option value="JPY">🇯🇵 JPY</option>
             </select>
           </div>
