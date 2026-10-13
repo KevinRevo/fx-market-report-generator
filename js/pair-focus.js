@@ -1232,33 +1232,10 @@ window.PairFocus = (() => {
 
   async function downloadInfographicImage() {
     const el = document.getElementById('pair-report-two-pages');
-    if (!el) return;
-
-    App.showToast('Génération de l\'infographie haute résolution...', 'info', 3000);
-
-    try {
-      const prevDir = el.style.flexDirection;
-      el.style.flexDirection = 'row';
-
-      const canvas = await html2canvas(el, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#94a3b8',
-        logging: false
-      });
-
-      el.style.flexDirection = prevDir;
-
-      const imageURL = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.download = `${currentPairId}_FOCUS_${selectedDate}_${currentLang.toUpperCase()}.png`;
-      link.href = imageURL;
-      link.click();
-
-      App.showToast('Infographie téléchargée avec succès !', 'success');
-    } catch (err) {
-      console.error('Image export failed:', err);
+    const filename = `${currentPairId}_FOCUS_${selectedDate}_${currentLang.toUpperCase()}.png`;
+    if (window.ReportExport) {
+      await window.ReportExport.exportElementToPNG(el, filename, printReport);
+    } else {
       printReport();
     }
   }
