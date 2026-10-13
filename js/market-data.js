@@ -46,7 +46,7 @@
 
   async function fetchText(url, ms) {
     const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), ms || 10000);
+    const timer = setTimeout(() => ctl.abort(), ms || 2500);
     try {
       const r = await fetch(url, { signal: ctl.signal });
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -154,19 +154,22 @@
   function getPair(base, quote) {
     return cached('pair:' + base + quote, 60000, async () => {
       let d = null;
-      let source = 'Yahoo Finance (interbancaire)';
-      try { d = await yahooBars(base + quote + '=X'); } catch (e) { /* try next */ }
+      let source = 'BCE (taux de référence)';
+      // 1. Instant Frankfurter lookup for major European & international pairs (takes ~200ms)
+      try {
+        d = await frankfurterBars(base, quote);
+      } catch (e) { /* fallback to yahoo */ }
+
+      // 2. Fallback to Yahoo Finance bars via proxy if Frankfurter does not cover the cross
       if (!d) {
-        try {
-          const inv = await yahooBars(quote + base + '=X');
-          if (inv) d = invert(inv);
-        } catch (e) { /* try next */ }
-      }
-      if (!d) {
-        try {
-          d = await frankfurterBars(base, quote);
-          source = 'BCE (taux de référence)';
-        } catch (e) { /* give up below */ }
+        source = 'Yahoo Finance (interbancaire)';
+        try { d = await yahooBars(base + quote + '=X'); } catch (e) { /* try next */ }
+        if (!d) {
+          try {
+            const inv = await yahooBars(quote + base + '=X');
+            if (inv) d = invert(inv);
+          } catch (e) { /* fail */ }
+        }
       }
       if (!d) throw new Error('Aucune donnée de marché disponible pour ' + base + '/' + quote);
       const a = analyse(d);
