@@ -161,8 +161,8 @@ window.PairFocus = (() => {
           'Eurozone manufacturing PMI rebound and export growth',
           'Easing energy import cost pressures'
         ],
-        targetFr: 'Retour vers la résistance majeure des 1.1500–1.1650.',
-        targetEn: 'Rebound toward key institutional resistance at 1.1500–1.1650.'
+        targetFr: 'Test indicatif de la zone {bullR}.',
+        targetEn: 'Indicative test of the {bullR} zone.'
       },
       central: {
         titleFr: 'Scénario central (Range de consolidation)',
@@ -177,8 +177,8 @@ window.PairFocus = (() => {
           'Range-bound volatility on interbank commercial flows',
           'Economic indicators broadly meeting consensus projections'
         ],
-        targetFr: 'Évolution dans la fourchette 1.1250 – 1.1450.',
-        targetEn: 'Oscillation within the 1.1250 – 1.1450 boundary.'
+        targetFr: 'Évolution dans la zone {cenR}.',
+        targetEn: 'Trading within the {cenR} zone.'
       },
       bear: {
         titleFr: 'Scénario baissier (EUR/USD ↓)',
@@ -193,8 +193,8 @@ window.PairFocus = (() => {
           'Geopolitical friction driving flight to liquidity in USD assets',
           'Widening European energy trade deficit'
         ],
-        targetFr: 'Test et enfoncement potentiel vers la zone 1.1000–1.1150.',
-        targetEn: 'Test and potential breakdown toward the 1.1000–1.1150 zone.'
+        targetFr: 'Test indicatif de la zone {bearR}.',
+        targetEn: 'Indicative test of the {bearR} zone.'
       }
     },
 
@@ -262,107 +262,91 @@ window.PairFocus = (() => {
     ],
 
     commercialReading: {
-      sellerFr: 'Surveiller la zone des prévisions haussières (1.1500–1.1600) pour optimiser les conversions en EUR.',
-      sellerEn: 'Monitor the upper institutional forecast zone (1.1500–1.1600) to optimize EUR conversion thresholds.',
-      buyerFr: 'Surveiller les points d\'entrée sur replis vers les supports clés (1.1200–1.1250) pour les achats de devises.',
-      buyerEn: 'Monitor consolidation dips toward key support levels (1.1200–1.1250) for commercial purchase timing.'
+      sellerFr: 'Vendeur d\'EUR : surveiller la zone haute {bullR} comme repère de conversion en USD.',
+      sellerEn: 'EUR seller: monitor the upper {bullR} zone as a USD conversion benchmark.',
+      buyerFr: 'Acheteur d\'EUR : surveiller la zone basse {bearR} comme repère d\'achat contre USD.',
+      buyerEn: 'EUR buyer: monitor the lower {bearR} zone as a benchmark against USD.'
     }
   };
 
   // ─── Live Interbank Rate Sync ───
   let pairData = JSON.parse(JSON.stringify(DEFAULT_PAIR_DATA));
 
+  let syncToken = 0;
+
+  const nowParis = () => new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).format(new Date());
+
+  /** Data-driven wording for pairs without a hand-written dataset */
+  function applyLiveFacts(p) {
+    const fmt = window.MarketData.fmtRate;
+    const hi = Math.max(...p.history);
+    const lo = Math.min(...p.history);
+    const mv = (v, up, down, upEn, downEn) => v == null ? null : { fr: v >= 0 ? up : down, en: v >= 0 ? upEn : downEn };
+    const d1 = mv(p.d1Pct, 'en hausse', 'en baisse', 'up', 'down');
+    const w1 = mv(p.w1Pct, 'en hausse', 'en baisse', 'up', 'down');
+    const fr = [], en = [];
+    if (d1) {
+      fr.push(`${p.name} ${d1.fr} de ${Math.abs(p.d1Pct).toFixed(2)}% vs clôture précédente (${p.prevCloseFmt})`);
+      en.push(`${p.name} ${d1.en} ${Math.abs(p.d1Pct).toFixed(2)}% vs previous close (${p.prevCloseFmt})`);
+    }
+    if (w1) {
+      fr.push(`${w1.fr === 'en hausse' ? 'Progression' : 'Repli'} de ${Math.abs(p.w1Pct).toFixed(2)}% vs clôture à 1 semaine (${p.weekCloseFmt})`);
+      en.push(`${w1.en === 'up' ? 'Gain' : 'Decline'} of ${Math.abs(p.w1Pct).toFixed(2)}% vs 1-week-ago close (${p.weekCloseFmt})`);
+    }
+    fr.push(`Fourchette des 5 dernières séances : ${fmt(lo)} – ${fmt(hi)}`);
+    en.push(`Last 5 sessions range: ${fmt(lo)} – ${fmt(hi)}`);
+    pairData.recentTrendsFr = fr;
+    pairData.recentTrendsEn = en;
+  }
+
   async function syncPairRate() {
-    App.showToast(currentLang === 'fr' ? 'Synchronisation du cours interbancaire TradingView...' : 'Synchronizing live TradingView interbank rate...', 'info', 2000);
+    const pid = currentPairId;
+    const token = ++syncToken;
+    const meta = getPairMeta(pid);
+    const M = window.MarketData;
+    const fr = currentLang === 'fr';
+    App.showToast(fr ? `Synchronisation ${meta.name} (clôtures + cours actuel)...` : `Syncing ${meta.name} (closes + live rate)...`, 'info', 2000);
 
-    try {
-      const res = await fetch('https://fx-market-report-generator.vercel.app/api/live-rates');
-      const json = await res.json();
-      if (json.success && json.data) {
-        const d = json.data;
-        const currentPairObj = SUPPORTED_PAIRS.find(p => p.id === currentPairId);
-        const pairKey = currentPairObj ? currentPairObj.name : 'EUR/USD';
+    const [pr, ev] = await Promise.allSettled([
+      M.getPair(meta.base, meta.quote),
+      M.getEventsFor([meta.base, meta.quote], 5)
+    ]);
+    // the user may have changed pair while we were waiting: never overwrite the new pair's data
+    if (token !== syncToken || pid !== currentPairId) return;
 
-        if (d[pairKey]) {
-          pairData.rate = d[pairKey].formattedPrice;
-          pairData.d1 = d[pairKey].d1 + ' (1J)';
-          pairData.w1 = d[pairKey].w1 + ' (1S)';
-          if (d[pairKey].history) {
-            pairData.history = d[pairKey].history;
-          }
-        }
-        
-        // Auto-generate "To Watch" from calendar via allorigins
-        try {
-          const calRes = await fetch('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://nfs.faireconomy.media/ff_calendar_thisweek.xml'));
-          const xmlData = await calRes.text();
-          
-          const events = [];
-          const eventMatches = xmlData.match(/<event>([\s\S]*?)<\/event>/g) || [];
-          eventMatches.forEach(ev => {
-             const country = (ev.match(/<country>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/country>/) || [])[1];
-             const title = (ev.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/) || [])[1];
-             const impact = (ev.match(/<impact>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/impact>/) || [])[1];
-             const dateStr = (ev.match(/<date>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/date>/) || [])[1];
-             const timeStr = (ev.match(/<time>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/time>/) || [])[1];
-             
-             if (impact === 'High' || impact === 'Medium') {
-               events.push({ country, title, impact, date: dateStr, time: timeStr });
-             }
-          });
+    if (ev.status === 'fulfilled' && ev.value.length) {
+      const objs = ev.value.map(e => ({
+        isObj: true, country: e.country, title: e.title, impact: e.impact,
+        dateStr: e.dateStr, time: e.time, proxy: e.proxy
+      }));
+      pairData.toWatchFr = objs;
+      pairData.toWatchEn = objs;
+    } else if (ev.status === 'rejected') {
+      console.warn('Calendar fetch error:', ev.reason);
+    }
 
-          const pairCurrencies = pairKey.split('/');
-          const relevantEvents = events.filter(ev => pairCurrencies.includes(ev.country) || ev.country === 'All');
-          if (relevantEvents.length > 0) {
-            const formatEventDate = (dStr) => {
-              if(!dStr) return '';
-              const parts = dStr.split('-');
-              if(parts.length === 3) return `${parts[1]}/${parts[0]}`; // DD/MM
-              return dStr;
-            };
-            
-            const formatEventTime = (tStr) => {
-              if(!tStr) return '';
-              if(tStr.toLowerCase().includes('all day')) return 'Journée';
-              let isPm = tStr.toLowerCase().includes('pm');
-              let cleanTime = tStr.replace(/[a-z]/gi, '').trim();
-              let parts = cleanTime.split(':');
-              if(parts.length === 2) {
-                let h = parseInt(parts[0], 10);
-                let m = parts[1];
-                if(isPm && h !== 12) h += 12;
-                if(!isPm && h === 12) h = 0;
-                h = (h + 6) % 24; // NY to Paris
-                return `${h.toString().padStart(2, '0')}h${m}`;
-              }
-              return tStr;
-            };
-            
-            const eventObjs = relevantEvents.slice(0, 5).map(ev => ({
-              isObj: true,
-              country: ev.country,
-              title: ev.title,
-              impact: ev.impact,
-              dateStr: formatEventDate(ev.date),
-              time: formatEventTime(ev.time)
-            }));
-            
-            pairData.toWatchFr = eventObjs;
-            pairData.toWatchEn = eventObjs;
-          }
-        } catch (e) {
-          console.warn('Calendar fetch error:', e);
-        }
-
-        const now = new Date();
-        pairData.timestamp = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' CEST';
-
-        refreshView();
-        App.showToast(currentLang === 'fr' ? `Cours ${pairKey} en direct : ${pairData.rate}` : `Live ${pairKey} rate: ${pairData.rate}`, 'success');
-      }
-    } catch (e) {
-      console.warn('Pair sync fallback:', e);
-      App.showToast(currentLang === 'fr' ? 'Erreur de synchronisation (le serveur local est-il lancé ?)' : 'Sync error (is local server running?)', 'error');
+    if (pr.status === 'fulfilled') {
+      const p = pr.value;
+      pairData.rate = p.rate;
+      pairData.d1Pct = p.d1Pct;
+      pairData.w1Pct = p.w1Pct;
+      pairData.d1 = p.d1 + ' (1J)';
+      pairData.w1 = p.w1 + ' (1S)';
+      pairData.d1Ref = p.prevCloseFmt;
+      pairData.w1Ref = p.weekCloseFmt;
+      pairData.history = p.history;
+      pairData.source = p.source;
+      pairData.timestamp = nowParis() + ' Paris';
+      if (pairData.generic) applyLiveFacts(p);
+      refreshView();
+      App.showToast(fr ? `Cours ${meta.name} en direct : ${p.rate} (1J ${p.d1} · 1S ${p.w1})` : `Live ${meta.name} rate: ${p.rate} (1D ${p.d1} · 1W ${p.w1})`, 'success');
+    } else {
+      console.warn('Pair sync failed:', pr.reason);
+      pairData.timestamp = fr ? 'non actualisé' : 'not refreshed';
+      refreshView();
+      App.showToast(fr ? `Impossible de récupérer le cours ${meta.name} (réessayez via « Sync »)` : `Could not fetch ${meta.name} rate (retry with "Sync")`, 'error');
     }
   }
 
@@ -373,85 +357,185 @@ window.PairFocus = (() => {
 
   function setLanguage(lang) {
     currentLang = lang;
-    refreshView();
+    rerenderPage();
   }
 
   
-  const CCY_FLAGS = {"EUR":"🇪🇺","USD":"🇺🇸","GBP":"🇬🇧","CHF":"🇨🇭","NOK":"🇳🇴","SEK":"🇸🇪","DKK":"🇩🇰","RON":"🇷🇴","CZK":"🇨🇿","HUF":"🇭🇺","PLN":"🇵🇱"};
+  const CCY_FLAGS = window.MarketData ? window.MarketData.FLAGS : {};
+  const CCY_CODES = window.MarketData ? window.MarketData.CODES : ['EUR', 'USD'];
 
-  function buildGenericDataset(base, quote) {
+  /** Metadata for any pair id (curated pairs first, otherwise built on the fly) */
+  function getPairMeta(id) {
+    const known = SUPPORTED_PAIRS.find(p => p.id === id);
+    if (known) return known;
+    const base = id.slice(0, 3);
+    const quote = id.slice(3, 6);
     return {
-      subFr: `Dynamique croisée ${base}/${quote}`,
-      subEn: `Cross dynamics ${base}/${quote}`,
-      recentTrendsFr: [`Analyse technique en cours sur ${base}/${quote}`, `Suivi des flux interbancaires`],
-      recentTrendsEn: [`Technical analysis ongoing for ${base}/${quote}`, `Monitoring interbank flows`],
-      keyFactorsFr: [`Différentiel de taux d'intérêt`, `Indicateurs macroéconomiques locaux`],
-      keyFactorsEn: [`Interest rate differential`, `Local macroeconomic indicators`],
-      drivers: {
-        fed: { titleFr: `Banque Centrale (${base})`, titleEn: `Central Bank (${base})`, flag: CCY_FLAGS[base]||'🏦', pointsFr: [`Politique monétaire locale`], pointsEn: [`Local monetary policy`] },
-        bce: { titleFr: `Banque Centrale (${quote})`, titleEn: `Central Bank (${quote})`, flag: CCY_FLAGS[quote]||'🏦', pointsFr: [`Politique monétaire locale`], pointsEn: [`Local monetary policy`] },
-        yields: { titleFr: 'Rendements & Taux', titleEn: 'Yields & Rates', flag: '📊', pointsFr: ['Écart de rendement'], pointsEn: ['Yield spread'] },
-        geopolitics: { titleFr: 'Risque Global', titleEn: 'Global Risk', flag: '🌍', pointsFr: ['Sentiment de marché'], pointsEn: ['Market sentiment'] }
-      },
-      scenarios: {
-        bull: { titleFr: `Scénario haussier (${base}/${quote} ↑)`, titleEn: `Bullish (${base}/${quote} ↑)`, pointsFr: [`Surperformance du ${base}`], pointsEn: [`${base} outperformance`], targetFr: 'Objectif {bullR}', targetEn: 'Target {bullR}' },
-        central: { titleFr: `Scénario central (Range)`, titleEn: `Central (Range)`, pointsFr: [`Équilibre des forces`], pointsEn: [`Balance of forces`], targetFr: 'Autour de {cenR}', targetEn: 'Around {cenR}' },
-        bear: { titleFr: `Scénario baissier (${base}/${quote} ↓)`, titleEn: `Bearish (${base}/${quote} ↓)`, pointsFr: [`Sous-performance du ${base}`], pointsEn: [`${base} underperformance`], targetFr: 'Objectif {bearR}', targetEn: 'Target {bearR}' }
-      },
-      banksTitleFr: 'VUES INSTITUTIONNELLES', banksTitleEn: 'INSTITUTIONAL VIEWS',
-      banksSubFr: 'Analyse des conditions de marché', banksSubEn: 'Market conditions analysis',
-      bankViews: [
-        { name: `Marché ${base}`, logo: CCY_FLAGS[base]||'🏦', pointsFr: [`Suivi macroéconomique`], pointsEn: [`Macro tracking`] },
-        { name: `Marché ${quote}`, logo: CCY_FLAGS[quote]||'🏦', pointsFr: [`Suivi macroéconomique`], pointsEn: [`Macro tracking`] }
-      ],
-      toWatchFr: [`Données économiques ${base}`, `Données économiques ${quote}`],
-      toWatchEn: [`${base} economic data`, `${quote} economic data`],
-      commercialReading: {
-        sellerFr: `Vendeur de ${base} : surveiller la zone haute {bullR} comme repère de conversion en ${quote}.`,
-        sellerEn: `${base} seller: monitor the upper {bullR} zone as a ${quote} conversion benchmark.`,
-        buyerFr: `Acheteur de ${base} : surveiller la zone basse {bearR} comme repère d'achat contre ${quote}.`,
-        buyerEn: `${base} buyer: monitor the lower {bearR} zone as a benchmark against ${quote}.`
-      },
-      sourcesText: 'Reuters, TradingView, Banques Centrales'
+      id, name: base + '/' + quote, base, quote,
+      flags: (CCY_FLAGS[base] || '') + ' ' + (CCY_FLAGS[quote] || ''),
+      defaultRate: '–', d1: null, w1: null
     };
   }
 
-  
-  function selectCustomPair() {
-    const base = document.getElementById('base-ccy').value;
-    const quote = document.getElementById('quote-ccy').value;
+  function ccyOptions(selected) {
+    return CCY_CODES.map(c => `<option value="${c}" ${c === selected ? 'selected' : ''}>${CCY_FLAGS[c] || ''} ${c}</option>`).join('');
+  }
+
+  /** Neutral, factual dataset for pairs that have no hand-written research content */
+  function buildGenericDataset(base, quote) {
+    const M = window.MarketData;
+    const pair = base + '/' + quote;
+    const cbB = { fr: M.cbName(base, 'fr'), en: M.cbName(base, 'en') };
+    const cbQ = { fr: M.cbName(quote, 'fr'), en: M.cbName(quote, 'en') };
+    const cbCard = (ccy, cb) => ({
+      titleFr: 'Banque centrale (' + cb.fr + ')',
+      titleEn: 'Central bank (' + cb.en + ')',
+      flag: CCY_FLAGS[ccy] || '🏦',
+      pointsFr: [
+        'Décisions de taux directeurs et communiqués officiels (' + cb.fr + ')',
+        'Trajectoire d\'inflation et guidance des membres du comité',
+        'Publications macro ' + ccy + ' : inflation, activité, emploi'
+      ],
+      pointsEn: [
+        'Policy rate decisions and official statements (' + cb.en + ')',
+        'Inflation path and committee forward guidance',
+        ccy + ' macro releases: inflation, activity, labour market'
+      ]
+    });
+    return {
+      generic: true,
+      forecasts: { bull: [], bear: [] },
+      recentTrendsFr: ['Synchronisation du cours en cours…'],
+      recentTrendsEn: ['Syncing live rate…'],
+      keyFactorsFr: [
+        'Différentiel de politique monétaire ' + base + ' vs ' + quote,
+        'Indicateurs macroéconomiques locaux (inflation, activité)',
+        'Appétit global pour le risque et flux de portage (carry)'
+      ],
+      keyFactorsEn: [
+        base + ' vs ' + quote + ' monetary policy differential',
+        'Local macro indicators (inflation, activity)',
+        'Global risk appetite and carry flows'
+      ],
+      drivers: {
+        fed: cbCard(base, cbB),
+        bce: cbCard(quote, cbQ),
+        yields: {
+          titleFr: 'Taux & différentiel', titleEn: 'Rates & differential', flag: '📊',
+          pointsFr: ['Écart de rendement ' + base + ' / ' + quote + ' à surveiller', 'Anticipations de taux des deux banques centrales', 'Flux de portage entre les deux devises'],
+          pointsEn: [base + ' / ' + quote + ' yield spread to monitor', 'Rate expectations of both central banks', 'Carry flows between the two currencies']
+        },
+        geopolitics: {
+          titleFr: 'Risque & Matières premières', titleEn: 'Risk & Commodities', flag: '🌐',
+          pointsFr: ['Appétit pour le risque (sensibilité aux phases d\'aversion)', 'Prix de l\'énergie et des matières premières', 'Tensions géopolitiques et flux vers les valeurs refuges'],
+          pointsEn: ['Risk appetite (sensitivity to risk-off phases)', 'Energy and commodity prices', 'Geopolitical tensions and safe-haven flows']
+        }
+      },
+      scenarios: {
+        bull: {
+          titleFr: 'Scénario haussier (' + pair + ' ↑)', titleEn: 'Bullish scenario (' + pair + ' ↑)',
+          pointsFr: ['Politique monétaire plus favorable à ' + base, 'Données macro ' + base + ' au-dessus du consensus', 'Moindre soutien à ' + quote],
+          pointsEn: ['Monetary stance more supportive of ' + base, base + ' macro data above consensus', 'Less support for ' + quote],
+          targetFr: 'Test indicatif de la zone {bullR}.', targetEn: 'Indicative test of the {bullR} zone.'
+        },
+        central: {
+          titleFr: 'Scénario central (range)', titleEn: 'Central scenario (range)',
+          pointsFr: ['Équilibre entre les deux politiques monétaires', 'Données conformes au consensus'],
+          pointsEn: ['Balance between both monetary policies', 'Data in line with consensus'],
+          targetFr: 'Évolution dans la zone {cenR}.', targetEn: 'Trading within the {cenR} zone.'
+        },
+        bear: {
+          titleFr: 'Scénario baissier (' + pair + ' ↓)', titleEn: 'Bearish scenario (' + pair + ' ↓)',
+          pointsFr: ['Politique monétaire plus favorable à ' + quote, 'Données macro ' + quote + ' au-dessus du consensus', 'Moindre soutien à ' + base],
+          pointsEn: ['Monetary stance more supportive of ' + quote, quote + ' macro data above consensus', 'Less support for ' + base],
+          targetFr: 'Test indicatif de la zone {bearR}.', targetEn: 'Indicative test of the {bearR} zone.'
+        }
+      },
+      bankViews: [
+        {
+          name: cbB.fr, logo: CCY_FLAGS[base] || '🏦',
+          pointsFr: ['Suivre le calendrier des réunions et les communiqués officiels', 'Source : site officiel de la banque centrale'],
+          pointsEn: ['Follow the meeting calendar and official statements', 'Source: central bank official website']
+        },
+        {
+          name: cbQ.fr, logo: CCY_FLAGS[quote] || '🏦',
+          pointsFr: ['Suivre le calendrier des réunions et les communiqués officiels', 'Source : site officiel de la banque centrale'],
+          pointsEn: ['Follow the meeting calendar and official statements', 'Source: central bank official website']
+        },
+        {
+          name: 'Desks de recherche', logo: '📚',
+          pointsFr: ['Aucune prévision institutionnelle vérifiée n\'est affichée pour cette paire', 'Consulter ING Think, MUFG, BNP Paribas (liens en section 9)'],
+          pointsEn: ['No verified institutional forecast is displayed for this pair', 'See ING Think, MUFG, BNP Paribas (links in section 9)']
+        }
+      ],
+      toWatchFr: ['Décisions et communiqués des banques centrales (' + cbB.fr + ', ' + cbQ.fr + ')', 'Publications d\'inflation ' + base + ' et ' + quote, 'Données d\'activité et d\'emploi'],
+      toWatchEn: ['Central bank decisions and statements (' + cbB.en + ', ' + cbQ.en + ')', base + ' and ' + quote + ' inflation releases', 'Activity and labour market data'],
+      commercialReading: {
+        sellerFr: 'Vendeur de ' + base + ' : surveiller la zone haute {bullR} comme repère de conversion en ' + quote + '.',
+        sellerEn: base + ' seller: monitor the upper {bullR} zone as a ' + quote + ' conversion benchmark.',
+        buyerFr: 'Acheteur de ' + base + ' : surveiller la zone basse {bearR} comme repère d\'achat contre ' + quote + '.',
+        buyerEn: base + ' buyer: monitor the lower {bearR} zone as a benchmark against ' + quote + '.'
+      }
+    };
+  }
+
+  function syncSelects() {
+    const meta = getPairMeta(currentPairId);
+    const b = document.getElementById('base-ccy');
+    const q = document.getElementById('quote-ccy');
+    if (b) b.value = meta.base;
+    if (q) q.value = meta.quote;
+  }
+
+  /** Called by the two dropdowns. `changed` = 'base' | 'quote' */
+  function selectCustomPair(changed) {
+    const prev = getPairMeta(currentPairId);
+    let base = document.getElementById('base-ccy').value;
+    let quote = document.getElementById('quote-ccy').value;
     if (base === quote) {
-      App.showToast('Veuillez sélectionner deux devises différentes', 'error');
-      return;
+      // same currency on both sides -> the other side takes the previous value of the one just changed
+      if (changed === 'base') quote = prev.base; else base = prev.quote;
     }
     selectPair(base + quote);
   }
 
+  function swapPairs() {
+    const m = getPairMeta(currentPairId);
+    selectPair(m.quote + m.base);
+  }
+
   function selectPair(pairId) {
     currentPairId = pairId;
-    
-    // Reset to base EUR/USD structure before merging new pair data
-    pairData = JSON.parse(JSON.stringify(DEFAULT_PAIR_DATA));
-    
-    const pairObj = SUPPORTED_PAIRS.find(p => p.id === pairId);
-    if (pairObj) {
-      pairData.pair = pairObj.name;
-      pairData.flags = pairObj.flags;
-      pairData.rate = pairObj.defaultRate;
-      pairData.d1 = pairObj.d1 + ' (1J)';
-      pairData.w1 = pairObj.w1 + ' (1S)';
-    }
+    syncToken++; // invalidate any sync still in flight for the previous pair
+    const meta = getPairMeta(pairId);
 
-    if (window.PairDatasets) {
-      const customData = window.PairDatasets.get(pairId);
-      if (customData) {
-        Object.assign(pairData, customData);
-      }
-    }
-    
-    document.getElementById('base-ccy').value = 'EUR';
-    document.getElementById('quote-ccy').value = 'USD';
+    // Reset to a clean structure, then merge pair-specific content
+    pairData = JSON.parse(JSON.stringify(DEFAULT_PAIR_DATA));
+    pairData.pair = meta.name;
+    pairData.flags = meta.flags;
+    pairData.rate = meta.defaultRate;
+    pairData.d1 = meta.d1 ? meta.d1 + ' (1J)' : '…';
+    pairData.w1 = meta.w1 ? meta.w1 + ' (1S)' : '…';
+    pairData.d1Pct = null;
+    pairData.w1Pct = null;
+    pairData.timestamp = '…';
+
+    const custom = window.PairDatasets && window.PairDatasets.get(pairId);
+    Object.assign(pairData, custom || buildGenericDataset(meta.base, meta.quote));
+
+    syncSelects();
+    refreshView();
     syncPairRate();
+  }
+
+  /** Re-render the whole page (toolbar + report) keeping the current pair */
+  function rerenderPage() {
+    const area = document.getElementById('content-area');
+    if (area && area.querySelector('.pair-focus-app-container')) {
+      area.innerHTML = renderPairFocusPage();
+    } else {
+      refreshView();
+    }
   }
 
   function getEventReading(country, title, isFr) {
@@ -661,20 +745,39 @@ window.PairFocus = (() => {
   function generatePairReportHTML(lang) {
     const isFr = lang === 'fr';
 
-    // Compute dynamic support/resistance zones based on current spot
-    const rateVal = parseFloat(pairData.rate) || 1.1296;
-    const isJPY = pairData.pair.includes('JPY');
-    const isHUF = pairData.pair.includes('HUF');
-    const isCZK = pairData.pair.includes('CZK');
-    const isPLN = pairData.pair.includes('PLN');
-    const step = isJPY || isHUF ? 2.5 : (isCZK || isPLN ? 0.05 : 0.015);
+    // Indicative zones derived from the live spot and recent 5-session range
+    const metaPair = getPairMeta(currentPairId);
+    const rateVal = parseFloat(pairData.rate);
+    const hasRate = isFinite(rateVal) && rateVal > 0;
+    const decs = !hasRate ? 4 : rateVal >= 100 ? 2 : rateVal >= 20 ? 3 : rateVal < 0.1 ? 5 : 4;
+    let stepPct = 0.012;
+    if (hasRate && pairData.history && pairData.history.length >= 3) {
+      const hi = Math.max(...pairData.history);
+      const lo = Math.min(...pairData.history);
+      stepPct = Math.min(0.025, Math.max(0.005, ((hi - lo) / rateVal) * 1.2));
+    }
+    const at = (mult) => hasRate ? (rateVal * (1 + stepPct * mult)).toFixed(decs) : '–';
     const lv = {
-      support: (rateVal - step).toFixed(isJPY || isHUF ? 1 : 4) + ' / ' + (rateVal - step * 0.8).toFixed(isJPY || isHUF ? 1 : 4),
-      resistance: (rateVal + step * 0.8).toFixed(isJPY || isHUF ? 1 : 4) + ' / ' + (rateVal + step).toFixed(isJPY || isHUF ? 1 : 4),
-      bull: (rateVal + (pairData.pair.startsWith('USD') ? -step * 2 : step * 2)).toFixed(isJPY || isHUF ? 1 : 4),
-      bear: (rateVal + (pairData.pair.startsWith('USD') ? step * 2 : -step * 2)).toFixed(isJPY || isHUF ? 1 : 4),
-      central: (rateVal - step * 0.5).toFixed(isJPY || isHUF ? 1 : 4) + ' – ' + (rateVal + step * 0.5).toFixed(isJPY || isHUF ? 1 : 4)
+      support: hasRate ? at(-1) + ' / ' + at(-0.8) : '–',
+      resistance: hasRate ? at(0.8) + ' / ' + at(1) : '–',
+      bull: at(2),
+      bear: at(-2),
+      central: hasRate ? at(-0.5) + ' – ' + at(0.5) : '–'
     };
+
+    // Variation colours follow the real sign of the move
+    const moveColor = (v) => v == null || isNaN(v) ? '#64748b' : (v >= 0 ? '#16a34a' : '#e11d48');
+    const refTxt = (ref) => ref ? (isFr ? ' vs clôt. ' : ' vs close ') + ref : '';
+    const d1p = pairData.d1Pct;
+    const todaySub = d1p == null
+      ? (isFr ? 'Suivi du cours interbancaire en direct' : 'Live interbank rate tracking')
+      : (isFr
+        ? `${pairData.pair} ${d1p >= 0 ? 'en hausse' : 'en baisse'} de ${Math.abs(d1p).toFixed(2)}% vs clôture précédente`
+        : `${pairData.pair} ${d1p >= 0 ? 'up' : 'down'} ${Math.abs(d1p).toFixed(2)}% vs previous close`);
+    const hasProxyEvents = (isFr ? pairData.toWatchFr : pairData.toWatchEn).some(w => w && w.proxy);
+    const proxyNote = hasProxyEvents
+      ? `<div style="font-size: 7px; color: #94a3b8; font-style: italic; margin-top: 2px;">${isFr ? '* Devise non couverte par le calendrier : évènements zone euro affichés à titre indicatif.' : '* Currency not covered by the calendar feed: euro-area events shown for context.'}</div>`
+      : '';
 
     // Helper to inject computed targets into text
     const inject = (str) => {
@@ -711,7 +814,7 @@ window.PairFocus = (() => {
             
             <!-- SECTION 1: PAIR TODAY -->
             <div>
-              ${renderSectionHeader('1', `${pairData.pair} ${isFr ? 'AUJOURD\'HUI' : 'TODAY'}`, isFr ? 'Un dollar soutenu par l\'écart de rendement' : 'US Dollar underpinned by yield spread')}
+              ${renderSectionHeader('1', `${pairData.pair} ${isFr ? 'AUJOURD\'HUI' : 'TODAY'}`, todaySub)}
               
               <div style="display: grid; grid-template-columns: 190px 220px 1fr; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px;">
                 <div style="display: flex; flex-direction: column; justify-content: center;">
@@ -721,11 +824,11 @@ window.PairFocus = (() => {
                   <div style="font-size: 34px; font-weight: 900; color: #0f172a; font-family: 'JetBrains Mono', monospace; line-height: 1.1; margin: 4px 0;">
                     ${pairData.rate}
                   </div>
-                  <div style="font-size: 11px; font-weight: 700; color: #e11d48; font-family: 'JetBrains Mono', monospace;">
-                    ${pairData.d1}
+                  <div style="font-size: 11px; font-weight: 700; color: ${moveColor(pairData.d1Pct)}; font-family: 'JetBrains Mono', monospace;">
+                    ${pairData.d1}<span style="font-size: 7.5px; font-weight: 600; color: #94a3b8;">${refTxt(pairData.d1Ref)}</span>
                   </div>
-                  <div style="font-size: 11px; font-weight: 700; color: #e11d48; font-family: 'JetBrains Mono', monospace;">
-                    ${pairData.w1}
+                  <div style="font-size: 11px; font-weight: 700; color: ${moveColor(pairData.w1Pct)}; font-family: 'JetBrains Mono', monospace;">
+                    ${pairData.w1}<span style="font-size: 7.5px; font-weight: 600; color: #94a3b8;">${refTxt(pairData.w1Ref)}</span>
                   </div>
                   <div style="font-size: 8px; color: #94a3b8; margin-top: 6px; line-height: 1.3;">
                     Source : ${pairData.source} (${pairData.timestamp})
@@ -886,7 +989,7 @@ window.PairFocus = (() => {
                       </tr>
                     </thead>
                     <tbody>
-                      ${pairData.forecasts ? pairData.forecasts.bull.map((f, i) => `
+                      ${(pairData.forecasts && pairData.forecasts.bull.length) ? pairData.forecasts.bull.map((f, i) => `
                         <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#f0fdf4'}; border-bottom: 1px solid #e2e8f0;">
                           <td style="padding: 4px 6px; font-weight: 600;">${f.inst}</td>
                           <td style="padding: 4px 6px; text-align: right; font-weight: 700; color: #166534; font-family: 'JetBrains Mono', monospace;">${f.target}</td>
@@ -911,7 +1014,7 @@ window.PairFocus = (() => {
                       </tr>
                     </thead>
                     <tbody>
-                      ${pairData.forecasts ? pairData.forecasts.bear.map((f, i) => `
+                      ${(pairData.forecasts && pairData.forecasts.bear.length) ? pairData.forecasts.bear.map((f, i) => `
                         <tr style="background: ${i % 2 === 0 ? '#ffffff' : '#fef2f2'}; border-bottom: 1px solid #e2e8f0;">
                           <td style="padding: 4px 6px; font-weight: 600;">${f.inst}</td>
                           <td style="padding: 4px 6px; text-align: right; font-weight: 700; color: #991b1b; font-family: 'JetBrains Mono', monospace;">${f.target}</td>
@@ -962,7 +1065,7 @@ window.PairFocus = (() => {
                             <div style="font-size: 9px; margin-bottom: 1px;">${w.dateStr}</div>
                             <div style="font-size: 7px; opacity: 0.8;">${w.time}</div>
                           </div>
-                          <div style="font-weight: 800; font-size: 8px; color: ${w.impact === 'High' ? '#dc2626' : '#ea580c'}; margin-right: 6px; width: 22px;">${w.country}</div>
+                          <div style="font-weight: 800; font-size: 8px; color: ${w.impact === 'High' ? '#dc2626' : '#ea580c'}; margin-right: 6px; width: 26px;">${w.country}${w.proxy ? '*' : ''}</div>
                           <div style="font-size: 8px; color: #1e293b; font-weight: 600; line-height: 1.1; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.title}</div>
                         </div>`;
                       } else {
@@ -971,12 +1074,13 @@ window.PairFocus = (() => {
                         </div>`;
                       }
                     }).join('')}
+                    ${proxyNote}
                   </div>
                 </div>
               </div>
 
               <div>
-                ${renderSectionHeader('7', isFr ? 'LECTURE COMMERCIALE' : 'COMMERCIAL READING', isFr ? 'Clés de lecture des évènements àà venir' : 'Key takeaways for upcoming events')}
+                ${renderSectionHeader('7', isFr ? 'LECTURE COMMERCIALE' : 'COMMERCIAL READING', isFr ? 'Clés de lecture des évènements à venir' : 'Key takeaways for upcoming events')}
                 <div style="display: flex; flex-direction: column; gap: 6px;">
                   ${(() => {
                     const events = (isFr ? pairData.toWatchFr : pairData.toWatchEn).filter(w => w && w.isObj).slice(0, 3);
@@ -994,11 +1098,11 @@ window.PairFocus = (() => {
                     } else {
                       return `
                         <div style="background: #f0fdf4; border-left: 3px solid #16a34a; padding: 8px 10px; border-radius: 0 4px 4px 0; margin-bottom: 6px;">
-                          <div style="font-size: 9.5px; font-weight: 700; color: #166534;">${isFr ? isFr ? 'Vendeur' : 'Seller' : 'Seller'}</div>
+                          <div style="font-size: 9.5px; font-weight: 700; color: #166534;">${isFr ? 'Vendeur de ' + metaPair.base : metaPair.base + ' seller'}</div>
                           <div style="font-size: 8.5px; color: #334155; margin-top: 2px;">${inject(isFr ? pairData.commercialReading.sellerFr : pairData.commercialReading.sellerEn)}</div>
                         </div>
                         <div style="background: #fef2f2; border-left: 3px solid #dc2626; padding: 8px 10px; border-radius: 0 4px 4px 0;">
-                          <div style="font-size: 9.5px; font-weight: 700; color: #991b1b;">${isFr ? 'Acheteur de devises' : 'Currency Buyer'}</div>
+                          <div style="font-size: 9.5px; font-weight: 700; color: #991b1b;">${isFr ? 'Acheteur de ' + metaPair.base : metaPair.base + ' buyer'}</div>
                           <div style="font-size: 8.5px; color: #334155; margin-top: 2px;">${inject(isFr ? pairData.commercialReading.buyerFr : pairData.commercialReading.buyerEn)}</div>
                         </div>
                       `;
@@ -1019,8 +1123,8 @@ window.PairFocus = (() => {
                       <td style="padding: 4px 10px; font-weight: 700; color: #1e40af; font-family: 'JetBrains Mono', monospace;">${pairData.rate}</td>
                     </tr>
                     <tr style="background: #f8fafc; border-bottom: 1px solid #f1f5f9;">
-                      <td style="padding: 4px 10px; font-weight: 600; color: #1e293b;">${isFr ? 'Variation 1J' : '1D Change'}</td>
-                      <td style="padding: 4px 10px; font-weight: 700; color: #e11d48; font-family: 'JetBrains Mono', monospace;">${pairData.d1}</td>
+                      <td style="padding: 4px 10px; font-weight: 600; color: #1e293b;">${isFr ? 'Variation 1J · 1S (vs clôtures)' : '1D · 1W change (vs closes)'}</td>
+                      <td style="padding: 4px 10px; font-weight: 700; color: ${moveColor(pairData.d1Pct)}; font-family: 'JetBrains Mono', monospace;">${pairData.d1} · ${pairData.w1}</td>
                     </tr>
                     <tr style="background: #ffffff; border-bottom: 1px solid #f1f5f9;">
                       <td style="padding: 4px 10px; font-weight: 600; color: #1e293b;">${isFr ? 'Support clé indicatif' : 'Indicative Key Support'}</td>
@@ -1051,6 +1155,7 @@ window.PairFocus = (() => {
 
   // ─── Render Page ───
   function renderPairFocusPage() {
+    const curMeta = getPairMeta(currentPairId);
     return `
       <div class="pair-focus-app-container">
         <!-- Control Bar -->
@@ -1058,38 +1163,16 @@ window.PairFocus = (() => {
           <div class="toolbar-title-group" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
             <h3>Pair Focus & Institutional Forecasts</h3>
 
-            <!-- Pair Selector -->
-            
+            <!-- Pair Selector (any base / quote) -->
             <div style="display: flex; gap: 4px; align-items: center;">
-              <select id="base-ccy" class="pair-select-dropdown" onchange="PairFocus.selectCustomPair()" style="width: 80px; padding-right: 2px;">
-                <option value="EUR" selected>🇪🇺 EUR</option>
-                <option value="USD">🇺🇸 USD</option>
-                <option value="GBP">🇬🇧 GBP</option>
-                <option value="CHF">🇨🇭 CHF</option>
-                <option value="NOK">🇳🇴 NOK</option>
-                <option value="SEK">🇸🇪 SEK</option>
-                <option value="DKK">🇩🇰 DKK</option>
-                <option value="RON">🇷🇴 RON</option>
-                <option value="CZK">🇨🇿 CZK</option>
-                <option value="HUF">🇭🇺 HUF</option>
-                <option value="PLN">🇵🇱 PLN</option>
+              <select id="base-ccy" class="pair-select-dropdown" onchange="PairFocus.selectCustomPair('base')" style="width: 96px; padding-right: 2px;">
+                ${ccyOptions(curMeta.base)}
               </select>
-              <span style="font-weight: 800; color: #1e293b;">/</span>
-              <select id="quote-ccy" class="pair-select-dropdown" onchange="PairFocus.selectCustomPair()" style="width: 80px; padding-right: 2px;">
-                <option value="EUR">🇪🇺 EUR</option>
-                <option value="USD" selected>🇺🇸 USD</option>
-                <option value="GBP">🇬🇧 GBP</option>
-                <option value="CHF">🇨🇭 CHF</option>
-                <option value="NOK">🇳🇴 NOK</option>
-                <option value="SEK">🇸🇪 SEK</option>
-                <option value="DKK">🇩🇰 DKK</option>
-                <option value="RON">🇷🇴 RON</option>
-                <option value="CZK">🇨🇿 CZK</option>
-                <option value="HUF">🇭🇺 HUF</option>
-                <option value="PLN">🇵🇱 PLN</option>
+              <button type="button" onclick="PairFocus.swapPairs()" title="Inverser / Swap" style="border: 1px solid #cbd5e1; background: #ffffff; border-radius: 6px; padding: 5px 8px; font-weight: 800; color: #1e40af; cursor: pointer;">⇄</button>
+              <select id="quote-ccy" class="pair-select-dropdown" onchange="PairFocus.selectCustomPair('quote')" style="width: 96px; padding-right: 2px;">
+                ${ccyOptions(curMeta.quote)}
               </select>
             </div>
-
 
             <!-- Date Picker for ANY day -->
             <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; padding: 4px 10px; border-radius: 8px; border: 1px solid #cbd5e1;">
@@ -1231,6 +1314,7 @@ window.PairFocus = (() => {
     initPage,
     selectPair,
     selectCustomPair,
+    swapPairs,
     setDate,
     setLanguage,
     syncPairRate,
