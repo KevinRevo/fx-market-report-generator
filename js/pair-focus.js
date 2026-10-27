@@ -40,6 +40,13 @@ window.PairFocus = (() => {
     }
   }
 
+  const pad2 = n => String(n).padStart(2, '0');
+  function getDynamicDateStr(offsetDays) {
+    const d = new Date();
+    d.setDate(d.getDate() + (offsetDays || 0));
+    return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1);
+  }
+
   // Base state
   const DEFAULT_PAIR_DATA = {
     pair: 'EUR/USD',
@@ -249,16 +256,16 @@ window.PairFocus = (() => {
     ],
 
     toWatchFr: [
-      { isObj: true, impact: 'High', dateStr: '14/10', time: '14h30', country: 'EUR', title: 'Discours Présidente BCE Christine Lagarde' },
-      { isObj: true, impact: 'High', dateStr: '14/10', time: '18h30', country: 'USD', title: 'Indice des Prix à la Consommation (Core CPI)' },
-      { isObj: true, impact: 'High', dateStr: '15/10', time: '14h30', country: 'USD', title: 'Ventes au détail US & Inscriptions chômage' },
-      { isObj: true, impact: 'Medium', dateStr: '16/10', time: '11h00', country: 'EUR', title: 'Balance commerciale de la Zone Euro' }
+      { isObj: true, impact: 'High', dateStr: getDynamicDateStr(0), time: '14h30', country: 'EUR', title: 'Discours Présidente BCE Christine Lagarde' },
+      { isObj: true, impact: 'High', dateStr: getDynamicDateStr(0), time: '18h30', country: 'USD', title: 'Indice des Prix à la Consommation (Core CPI)' },
+      { isObj: true, impact: 'High', dateStr: getDynamicDateStr(1), time: '14h30', country: 'USD', title: 'Ventes au détail US & Inscriptions chômage' },
+      { isObj: true, impact: 'Medium', dateStr: getDynamicDateStr(2), time: '11h00', country: 'EUR', title: 'Balance commerciale de la Zone Euro' }
     ],
     toWatchEn: [
-      { isObj: true, impact: 'High', dateStr: '14/10', time: '14h30', country: 'EUR', title: 'ECB President Lagarde Speaks' },
-      { isObj: true, impact: 'High', dateStr: '14/10', time: '18h30', country: 'USD', title: 'Core CPI m/m (US Consumer Price Index)' },
-      { isObj: true, impact: 'High', dateStr: '15/10', time: '14h30', country: 'USD', title: 'US Retail Sales & Jobless Claims' },
-      { isObj: true, impact: 'Medium', dateStr: '16/10', time: '11h00', country: 'EUR', title: 'Eurozone Trade Balance' }
+      { isObj: true, impact: 'High', dateStr: getDynamicDateStr(0), time: '14h30', country: 'EUR', title: 'ECB President Lagarde Speaks' },
+      { isObj: true, impact: 'High', dateStr: getDynamicDateStr(0), time: '18h30', country: 'USD', title: 'Core CPI m/m (US Consumer Price Index)' },
+      { isObj: true, impact: 'High', dateStr: getDynamicDateStr(1), time: '14h30', country: 'USD', title: 'US Retail Sales & Jobless Claims' },
+      { isObj: true, impact: 'Medium', dateStr: getDynamicDateStr(2), time: '11h00', country: 'EUR', title: 'Eurozone Trade Balance' }
     ],
 
     commercialReading: {
@@ -309,6 +316,11 @@ window.PairFocus = (() => {
     const fr = currentLang === 'fr';
     App.showToast(fr ? `Synchronisation ${meta.name} (clôtures + cours actuel)...` : `Syncing ${meta.name} (closes + live rate)...`, 'info', 2000);
 
+    // Also fetch live articles for this pair
+    if (window.Sources && window.Sources.fetchLiveArticles) {
+      window.Sources.fetchLiveArticles('pair', meta.name).then(() => refreshView()).catch(() => {});
+    }
+
     const [pr, ev] = await Promise.allSettled([
       M.getPair(meta.base, meta.quote),
       M.getEventsFor([meta.base, meta.quote], 5)
@@ -319,7 +331,7 @@ window.PairFocus = (() => {
     if (ev.status === 'fulfilled' && ev.value.length) {
       const objs = ev.value.map(e => ({
         isObj: true, country: e.country, title: e.title, impact: e.impact,
-        dateStr: e.dateStr, time: e.time, proxy: e.proxy
+        dateStr: e.dateStr, time: e.time, proxy: e.proxy, isPast: !!e.isPast
       }));
       pairData.toWatchFr = objs;
       pairData.toWatchEn = objs;
@@ -469,16 +481,16 @@ window.PairFocus = (() => {
         }
       ],
       toWatchFr: [
-        { isObj: true, impact: 'High', dateStr: '14/10', time: '14h30', country: base, title: 'Décisions et communiqués de politique monétaire (' + cbB.fr + ')' },
-        { isObj: true, impact: 'High', dateStr: '15/10', time: '10h00', country: quote, title: 'Publication de l\'Indice des Prix (CPI / Inflation ' + quote + ')' },
-        { isObj: true, impact: 'High', dateStr: '15/10', time: '14h30', country: base, title: 'Indicateurs d\'activité économique & PMI (' + base + ')' },
-        { isObj: true, impact: 'Medium', dateStr: '16/10', time: '11h00', country: quote, title: 'Statistiques sur l\'emploi et les salaires réels (' + quote + ')' }
+        { isObj: true, impact: 'High', dateStr: getDynamicDateStr(0), time: '14h30', country: base, title: 'Décisions et communiqués de politique monétaire (' + cbB.fr + ')' },
+        { isObj: true, impact: 'High', dateStr: getDynamicDateStr(1), time: '10h00', country: quote, title: 'Publication de l\'Indice des Prix (CPI / Inflation ' + quote + ')' },
+        { isObj: true, impact: 'High', dateStr: getDynamicDateStr(1), time: '14h30', country: base, title: 'Indicateurs d\'activité économique & PMI (' + base + ')' },
+        { isObj: true, impact: 'Medium', dateStr: getDynamicDateStr(2), time: '11h00', country: quote, title: 'Statistiques sur l\'emploi et les salaires réels (' + quote + ')' }
       ],
       toWatchEn: [
-        { isObj: true, impact: 'High', dateStr: '14/10', time: '14h30', country: base, title: 'Monetary policy statement & interest rate decision (' + cbB.en + ')' },
-        { isObj: true, impact: 'High', dateStr: '15/10', time: '10h00', country: quote, title: 'Inflation rate release (CPI ' + quote + ')' },
-        { isObj: true, impact: 'High', dateStr: '15/10', time: '14h30', country: base, title: 'Business activity and PMI indicators (' + base + ')' },
-        { isObj: true, impact: 'Medium', dateStr: '16/10', time: '11h00', country: quote, title: 'Labour market and real wage statistics (' + quote + ')' }
+        { isObj: true, impact: 'High', dateStr: getDynamicDateStr(0), time: '14h30', country: base, title: 'Monetary policy statement & interest rate decision (' + cbB.en + ')' },
+        { isObj: true, impact: 'High', dateStr: getDynamicDateStr(1), time: '10h00', country: quote, title: 'Inflation rate release (CPI ' + quote + ')' },
+        { isObj: true, impact: 'High', dateStr: getDynamicDateStr(1), time: '14h30', country: base, title: 'Business activity and PMI indicators (' + base + ')' },
+        { isObj: true, impact: 'Medium', dateStr: getDynamicDateStr(2), time: '11h00', country: quote, title: 'Labour market and real wage statistics (' + quote + ')' }
       ],
       commercialReading: {
         sellerFr: 'Vendeur de ' + base + ' : surveiller la zone haute {bullR} comme repère de conversion en ' + quote + '.',
@@ -1167,13 +1179,21 @@ window.PairFocus = (() => {
                       const items = list.slice(0, 4);
                       return items.map(w => {
                         if (w && w.isObj) {
+                          const isPast = !!w.isPast;
+                          const bg = isPast ? '#f1f5f9' : (w.impact === 'High' ? '#fee2e2' : '#ffedd5');
+                          const border = isPast ? '#94a3b8' : (w.impact === 'High' ? '#dc2626' : '#ea580c');
+                          const statusColor = isPast ? '#475569' : (w.impact === 'High' ? '#991b1b' : '#9a3412');
+                          const statusBadge = isPast ? (isFr ? 'CONTEXTE' : 'CONTEXT') : (isFr ? 'À VENIR' : 'UPCOMING');
                           return `
-                          <div style="display: flex; align-items: center; background: ${w.impact === 'High' ? '#fee2e2' : '#ffedd5'}; padding: 4px 6px; border-radius: 4px; border-left: 3px solid ${w.impact === 'High' ? '#dc2626' : '#ea580c'};">
-                            <div style="font-weight: 800; color: ${w.impact === 'High' ? '#991b1b' : '#9a3412'}; font-size: 7.5px; width: 40px; text-align: center; border-right: 1px solid rgba(0,0,0,0.1); padding-right: 6px; margin-right: 6px;">
-                              <div style="font-size: 9px; margin-bottom: 1px;">${w.dateStr || '–'}</div>
-                              <div style="font-size: 7px; opacity: 0.8;">${w.time || '–'}</div>
+                          <div style="display: flex; align-items: center; background: ${bg}; padding: 4px 6px; border-radius: 4px; border-left: 3px solid ${border};">
+                            <div style="font-weight: 800; color: ${statusColor}; font-size: 7.5px; width: 44px; text-align: center; border-right: 1px solid rgba(0,0,0,0.1); padding-right: 4px; margin-right: 6px;">
+                              <div style="font-size: 8.5px; margin-bottom: 1px;">${w.dateStr || '–'}</div>
+                              <div style="font-size: 6.5px; opacity: 0.85; text-transform: uppercase;">${w.time || '–'}</div>
                             </div>
-                            <div style="font-weight: 800; font-size: 8px; color: ${w.impact === 'High' ? '#dc2626' : '#ea580c'}; margin-right: 6px; width: 26px;">${w.country || 'FX'}${w.proxy ? '*' : ''}</div>
+                            <div style="display: flex; flex-direction: column; align-items: flex-start; margin-right: 6px; min-width: 32px;">
+                              <span style="font-weight: 800; font-size: 8px; color: ${statusColor};">${w.country || 'FX'}${w.proxy ? '*' : ''}</span>
+                              <span style="font-size: 6px; font-weight: 700; color: ${isPast ? '#64748b' : (w.impact === 'High' ? '#dc2626' : '#ea580c')};">${statusBadge}</span>
+                            </div>
                             <div style="font-size: 8px; color: #1e293b; font-weight: 600; line-height: 1.1; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.title}</div>
                           </div>`;
                         } else {
@@ -1195,17 +1215,24 @@ window.PairFocus = (() => {
                     const list = (isFr ? pairData.toWatchFr : pairData.toWatchEn) || [];
                     const events = list.filter(w => w && w.isObj).slice(0, 4);
                     if (events.length > 0) {
-                      return events.map(w => `
-                        <div style="background: #f8fafc; border-left: 3px solid ${w.impact === 'High' ? '#dc2626' : '#ea580c'}; padding: 5px 8px; border-radius: 0 4px 4px 0;">
-                          <div style="font-size: 8px; font-weight: 700; color: #1e293b; margin-bottom: 1px; display: flex; justify-content: space-between;">
-                            <span>${w.title}</span>
-                            <span style="color: #64748b; font-weight: 600; font-size: 7.5px;">${w.dateStr || ''}</span>
+                      return events.map(w => {
+                        const isPast = !!w.isPast;
+                        const border = isPast ? '#94a3b8' : (w.impact === 'High' ? '#dc2626' : '#ea580c');
+                        const statusBadge = isPast ? (isFr ? 'CONTEXTE' : 'CONTEXT') : (isFr ? 'À VENIR' : 'UPCOMING');
+                        const statusColor = isPast ? '#475569' : (w.impact === 'High' ? '#dc2626' : '#ea580c');
+                        return `
+                        <div style="background: ${isPast ? '#f8fafc' : '#ffffff'}; border: 1px solid #e2e8f0; border-left: 3px solid ${border}; padding: 5px 8px; border-radius: 0 4px 4px 0;">
+                          <div style="font-size: 8px; font-weight: 700; color: #1e293b; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 70%;">
+                              <span style="font-size: 6.5px; font-weight: 800; color: ${statusColor}; margin-right: 4px;">[${statusBadge}]</span>${w.title}
+                            </span>
+                            <span style="color: #64748b; font-weight: 600; font-size: 7.5px;">${w.dateStr || ''} ${w.time ? '· ' + w.time : ''}</span>
                           </div>
                           <div style="font-size: 7.5px; color: #475569; line-height: 1.25;">
                             ${getEventReading(w.country, w.title, isFr, metaPair.base, metaPair.quote)}
                           </div>
-                        </div>
-                      `).join('');
+                        </div>`;
+                      }).join('');
                     } else {
                       return `
                         <div style="background: #f0fdf4; border-left: 3px solid #16a34a; padding: 8px 10px; border-radius: 0 4px 4px 0; margin-bottom: 6px;">
