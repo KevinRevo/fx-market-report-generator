@@ -249,11 +249,18 @@ window.PairDatasets = (() => {
       drivers[keys[i]] = { titleFr: d.title[0], titleEn: d.title[1], flag: d.flag, pointsFr: d.fr, pointsEn: d.en };
     });
     const sc = (s) => ({ titleFr: s.t[0], titleEn: s.t[1], pointsFr: s.fr, pointsEn: s.en, targetFr: s.c[0], targetEn: s.c[1] });
+    const pad = n => String(n).padStart(2, '0');
+    const now = new Date();
+    const dStr = (offsetDays) => {
+      const d = new Date(now);
+      d.setDate(now.getDate() + offsetDays);
+      return pad(d.getDate()) + '/' + pad(d.getMonth() + 1);
+    };
     const defaultDates = [
-      { dateStr: '14/10', time: '14h30', impact: 'High' },
-      { dateStr: '15/10', time: '10h00', impact: 'High' },
-      { dateStr: '15/10', time: '14h30', impact: 'High' },
-      { dateStr: '16/10', time: '11h00', impact: 'Medium' }
+      { dateStr: dStr(0), time: '14h30', impact: 'High' },
+      { dateStr: dStr(1), time: '10h00', impact: 'High' },
+      { dateStr: dStr(1), time: '14h30', impact: 'High' },
+      { dateStr: dStr(2), time: '11h00', impact: 'Medium' }
     ];
     const mapWatch = (arr, isFr) => (arr || []).map((w, idx) => {
       if (w && typeof w === 'object') return w;
