@@ -287,8 +287,18 @@ window.DailyReport = (() => {
   async function syncLiveInterbankRates() {
     App.showToast(currentLang === 'fr' ? 'Connexion aux flux interbancaires en direct (TradingView / Interbank)...' : 'Connecting to live interbank feeds (TradingView / Interbank)...', 'info', 3000);
 
+    // Also trigger live news refresh for Section 9
+    if (window.Sources && window.Sources.fetchLiveArticles) {
+      window.Sources.fetchLiveArticles('daily').then(() => refreshRenderedView()).catch(() => {});
+    }
+
     try {
-      const res = await fetch('https://fx-market-report-generator.vercel.app/api/live-rates');
+      let res;
+      try {
+        res = await fetch('/api/live-rates', { signal: AbortSignal.timeout(3000) });
+      } catch (_) {
+        res = await fetch('https://fx-market-report-generator.vercel.app/api/live-rates', { signal: AbortSignal.timeout(4000) });
+      }
       const json = await res.json();
 
       if (json.success && json.data) {
