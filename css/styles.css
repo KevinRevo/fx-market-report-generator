@@ -1783,12 +1783,19 @@ textarea.form-control {
   border-color: #cbd5e1;
 }
 
+.subtab-btn:hover {
+  filter: brightness(0.96);
+}
+
+@media (max-width: 1024px) {
+  #news-feed-root > div > div:nth-child(3) {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 @media (max-width: 900px) {
   #news-feed-root .view-btn {
     font-size: 10.5px;
     padding: 5px 9px;
-  }
-  #news-feed-root > div > div:nth-child(3) {
-    grid-template-columns: 1fr !important;
   }
 }
