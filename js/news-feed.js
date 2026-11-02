@@ -1,12 +1,10 @@
 /**
- * NewsFeed — Institutional Press Review & FX/Geopolitical News Hub
- * Kevin Saudubray — FX Market Intelligence & Sales Hub
+ * NewsFeed — Institutional Press Review & Commercial Email Generator
+ * Kevin Saudubray — FX Market Intelligence & Sales Hub (Revolut Business)
  * 
- * Includes:
- * 1. Sub-tab 1: Press Review (48 to 200+ verified daily articles from Reuters, ING Think,
- *    FX Empire, The Guardian, Sky News, Investing.com, FXStreet, US News, Les Echos, Le Monde, Le Figaro, BFM)
- * 2. Sub-tab 2: Commercial Email Template Generator (EUR/USD & Cross Alerts with dynamic % move,
- *    hyperlinked articles, and 1-line expected market impact per news).
+ * Sub-tab 1: Press Review (48 to 200+ daily articles from Reuters, ING, FX Empire, Guardian, Sky, Investing, FXStreet, US News, etc.)
+ * Sub-tab 2: Commercial Email Template Generator (Exact model requested with loss/gain %, hyperlinked articles,
+ *            1-line market impact per news item, and direct calendar link).
  */
 
 window.NewsFeed = (() => {
@@ -44,9 +42,8 @@ window.NewsFeed = (() => {
     'Macroéconomie': { bg: '#f1f5f9', color: '#334155', border: '#cbd5e1', icon: '📈' }
   };
 
-  // ─── Rich Daily Verified Articles (48+ Items across all requested publishers) ───
-  const CURATED_ARTICLES = [
-    // 1. REUTERS (EN)
+  // ─── Curated Press Articles for Feed ───
+  const CURATED_FEED = [
     {
       id: 'reu-1',
       title: 'US Dollar consolidates near 101.60 as FX markets await Fed meeting and payrolls',
@@ -55,9 +52,6 @@ window.NewsFeed = (() => {
       publisher: 'Reuters',
       lang: 'en',
       category: 'FX & Devises',
-      pair: 'EUR/USD',
-      impactFr: 'FOMC : Un maintien d\'un biais restrictif conforterait le dollar et accentuerait la pression baissière sur l\'EUR/USD sous 1,1120.',
-      impactEn: 'FOMC: Sustained restrictive rate stance would support USD and cap EUR/USD rebound attempts below 1.1120.',
       timeAgo: 'il y a 40 min',
       dateStr: '02/11'
     },
@@ -69,9 +63,6 @@ window.NewsFeed = (() => {
       publisher: 'Reuters',
       lang: 'en',
       category: 'Banques Centrales',
-      pair: 'EUR/USD',
-      impactFr: 'BCE : Tout décalage du rythme de baisse de taux par rapport à la Fed réduit l\'écart de rendement en défaveur de l\'euro.',
-      impactEn: 'ECB: Pacing rate cuts slower than market bets cushions downside, but leaves EUR vulnerable to transatlantic yield gaps.',
       timeAgo: 'il y a 1 h',
       dateStr: '02/11'
     },
@@ -83,25 +74,17 @@ window.NewsFeed = (() => {
       publisher: 'Reuters',
       lang: 'en',
       category: 'Énergie & Pétrole',
-      pair: 'EUR/USD',
-      impactFr: 'Pétrole : Toute hausse du brut dégrade la balance commerciale européenne, pesant mécaniquement sur la monnaie unique.',
-      impactEn: 'Oil: Elevated crude import bills worsen Eurozone trade terms, exerting structural drag on the Euro.',
       timeAgo: 'il y a 3 h',
       dateStr: '02/11'
     },
-
-    // 2. ING THINK (EN)
     {
       id: 'ing-1',
       title: 'THINK Ahead: How central bank divergence will dictate G10 FX cross volatility',
       summary: 'ING Think outlines why divergent fiscal balances and resilient US Treasury yields continue to limit sustained Euro rallies against the US Dollar.',
-      link: 'https://think.ing.com/articles/fx-daily-central-bank-divergence-remains-primary-anchor/',
+      link: 'https://think.ing.com/',
       publisher: 'ING Think',
       lang: 'en',
       category: 'Banques Centrales',
-      pair: 'EUR/USD',
-      impactFr: 'Recherche ING : Le différentiel de croissance et de rendement USA/Europe maintient un biais vendeur sur l\'EUR/USD vers 1,1080.',
-      impactEn: 'ING Research: Resilient US economic outperformance suggests upside in EUR/USD remains capped around 1.1250.',
       timeAgo: 'il y a 1 h',
       dateStr: '02/11'
     },
@@ -113,14 +96,9 @@ window.NewsFeed = (() => {
       publisher: 'ING Think',
       lang: 'en',
       category: 'FX & Devises',
-      pair: 'EUR/PLN',
-      impactFr: 'CEE FX : Le maintien des taux directeurs de la NBP soutient le zloty face à l\'euro et limite la dérive haussière sur EUR/PLN.',
-      impactEn: 'CEE FX: NBP rate pause bolsters Polish zloty carry appeal, keeping EUR/PLN within tight consolidation bands.',
       timeAgo: 'il y a 2 h',
       dateStr: '02/11'
     },
-
-    // 3. FX EMPIRE (EN)
     {
       id: 'fxe-1',
       title: 'EUR/USD Price Forecast: Pair tests 1.1150 key technical support amid dollar resilience',
@@ -129,9 +107,6 @@ window.NewsFeed = (() => {
       publisher: 'FX Empire',
       lang: 'en',
       category: 'FX & Devises',
-      pair: 'EUR/USD',
-      impactFr: 'Analyse technique : La cassure des 1,1150 ouvrirait la voie vers 1,1080 ; un retour au-dessus de 1,1220 est requis pour neutraliser la baisse.',
-      impactEn: 'Technical level: Sustained break below 1.1150 targets 1.1080; bulls need reclaim of 1.1220 to stem sell-off.',
       timeAgo: 'il y a 2 h',
       dateStr: '02/11'
     },
@@ -139,18 +114,13 @@ window.NewsFeed = (() => {
       id: 'fxe-2',
       title: 'US Dollar Index holds firm at 101.60 as Treasury yields find solid institutional demand',
       summary: 'DXY consolidates as 10-year Treasury yields anchor around 4.15%, keeping capital flows biased toward US dollar-denominated assets.',
-      link: 'https://www.fxempire.com/news/article/us-dollar-price-forecast',
+      link: 'https://www.fxempire.com/news',
       publisher: 'FX Empire',
       lang: 'en',
       category: 'FX & Devises',
-      pair: 'EUR/USD',
-      impactFr: 'Rendements US : L\'attractivité des Treasuries 10 ans draine les capitaux vers le dollar au détriment des devises européennes.',
-      impactEn: 'US Yields: Solid Treasury yields draw institutional allocations into USD, constraining EUR/USD upside.',
       timeAgo: 'il y a 3 h',
       dateStr: '02/11'
     },
-
-    // 4. THE GUARDIAN (EN)
     {
       id: 'gua-1',
       title: 'Global trade and currency markets monitor Middle East diplomatic talks and Hormuz supply routes',
@@ -159,9 +129,6 @@ window.NewsFeed = (() => {
       publisher: 'The Guardian (World)',
       lang: 'en',
       category: 'Géopolitique',
-      pair: 'EUR/USD',
-      impactFr: 'Géopolitique : Les pics de tension soutiennent le statut de valeur refuge du billet vert face à l\'euro.',
-      impactEn: 'Geopolitics: Escalating supply chain uncertainty accelerates safe-haven flows toward the US Dollar.',
       timeAgo: 'il y a 2 h',
       dateStr: '02/11'
     },
@@ -173,14 +140,9 @@ window.NewsFeed = (() => {
       publisher: 'The Guardian (Business)',
       lang: 'en',
       category: 'Macroéconomie',
-      pair: 'EUR/USD',
-      impactFr: 'Activité européenne : La faiblesse des PMI manufacturiers incite la BCE à assouplir sa politique, pesant sur l\'euro.',
-      impactEn: 'Macro activity: Sluggish European PMI surveys reinforce expectations of dovish ECB easing cycle.',
       timeAgo: 'il y a 4 h',
       dateStr: '02/11'
     },
-
-    // 5. SKY NEWS (EN)
     {
       id: 'sky-1',
       title: 'Oil prices fluctuate as energy traders evaluate global demand projections and OPEC+ quotas',
@@ -189,9 +151,6 @@ window.NewsFeed = (() => {
       publisher: 'Sky News (Business)',
       lang: 'en',
       category: 'Énergie & Pétrole',
-      pair: 'EUR/USD',
-      impactFr: 'Marché pétrolier : La volatilité du brut impacte les coûts d\'importation des entreprises européennes.',
-      impactEn: 'Energy: Fluctuating crude prices directly impact European enterprise procurement costs.',
       timeAgo: 'il y a 3 h',
       dateStr: '02/11'
     },
@@ -203,14 +162,9 @@ window.NewsFeed = (() => {
       publisher: 'Sky News (World)',
       lang: 'en',
       category: 'Géopolitique',
-      pair: 'EUR/USD',
-      impactFr: 'Risque pays : Les primes de risque géopolitique incitent les trésoriers à verrouiller leurs couvertures de change.',
-      impactEn: 'Sovereign risk: Heightened risk premiums prompt corporate treasurers to lock in FX hedging lines.',
       timeAgo: 'il y a 5 h',
       dateStr: '02/11'
     },
-
-    // 6. INVESTING.COM (EN)
     {
       id: 'inv-1',
       title: 'Dollar Index holds firm as focus shifts to upcoming US GDP flash estimate and Core PCE',
@@ -219,9 +173,6 @@ window.NewsFeed = (() => {
       publisher: 'Investing.com',
       lang: 'en',
       category: 'FX & Devises',
-      pair: 'EUR/USD',
-      impactFr: 'PIB & Inflation US : Une croissance américaine plus robuste que prévu repousserait les baisses de taux Fed, renforçant le dollar.',
-      impactEn: 'US Growth: Robust GDP numbers would delay Fed cuts, driving additional downward pressure on EUR/USD.',
       timeAgo: 'il y a 1 h',
       dateStr: '02/11'
     },
@@ -233,14 +184,9 @@ window.NewsFeed = (() => {
       publisher: 'Investing.com',
       lang: 'en',
       category: 'Banques Centrales',
-      pair: 'EUR/CHF',
-      impactFr: 'BNS : La vigilance active de la banque centrale limite le risque d\'envolée brutale du CHF sous 0,9300.',
-      impactEn: 'SNB: Active FX intervention mandate puts a soft floor under EUR/CHF around key technical support.',
       timeAgo: 'il y a 3 h',
       dateStr: '02/11'
     },
-
-    // 7. FXSTREET (EN)
     {
       id: 'fxs-1',
       title: 'EUR/USD Price Analysis: Bearish bias intact below 100-day SMA ahead of Eurozone CPI release',
@@ -249,9 +195,6 @@ window.NewsFeed = (() => {
       publisher: 'FXStreet',
       lang: 'en',
       category: 'FX & Devises',
-      pair: 'EUR/USD',
-      impactFr: 'Inflation zone euro : Un ralentissement rapide de l\'IPCH européen conforterait la BCE dans ses baisses de taux, pesant sur l\'euro.',
-      impactEn: 'Euro CPI: Faster disinflation accelerates ECB rate cuts, reinforcing downside momentum on EUR/USD.',
       timeAgo: 'il y a 2 h',
       dateStr: '02/11'
     },
@@ -263,14 +206,9 @@ window.NewsFeed = (() => {
       publisher: 'FXStreet',
       lang: 'en',
       category: 'Banques Centrales',
-      pair: 'EUR/USD',
-      impactFr: 'Fed : La modération des discours conforte le dollar face aux devises du G10 plus promptes à assouplir leurs taux.',
-      impactEn: 'Fed Rhetoric: Measured rate guidance maintains carry advantage for dollar holders.',
       timeAgo: 'il y a 4 h',
       dateStr: '02/11'
     },
-
-    // 8. US NEWS (EN)
     {
       id: 'usn-1',
       title: 'Federal Reserve Interest Rate Outlook: What Corporate Treasuries and Businesses Must Watch',
@@ -279,14 +217,9 @@ window.NewsFeed = (() => {
       publisher: 'US News',
       lang: 'en',
       category: 'Macroéconomie',
-      pair: 'EUR/USD',
-      impactFr: 'Trésorerie d\'entreprise : L\'incertitude monétaire incite les directions financières à anticiper leurs couvertures à 3 et 6 mois.',
-      impactEn: 'Corporate Hedging: Rate trajectory shifts highlight necessity of systematic forward exchange contracts.',
       timeAgo: 'il y a 5 h',
       dateStr: '02/11'
     },
-
-    // 9. LES ECHOS (FR)
     {
       id: 'ech-1',
       title: 'Marché des changes : L\'euro sous pression face au dollar dans un climat d\'attentisme monétaire',
@@ -295,9 +228,6 @@ window.NewsFeed = (() => {
       publisher: 'Les Echos',
       lang: 'fr',
       category: 'FX & Devises',
-      pair: 'EUR/USD',
-      impactFr: 'Impact direct : Le recul de l\'euro renchérit le coût d\'achat des matières premières et fournitures facturées en USD.',
-      impactEn: 'Corporate impact: Weaker euro directly increases dollar-denominated import and component costs.',
       timeAgo: 'il y a 1 h',
       dateStr: '02/11'
     },
@@ -309,14 +239,9 @@ window.NewsFeed = (() => {
       publisher: 'Les Echos',
       lang: 'fr',
       category: 'Banques Centrales',
-      pair: 'EUR/USD',
-      impactFr: 'Différentiel de taux : Des baisses de taux BCE anticipées accentuent l\'avantage de rémunération des liquidités en dollars.',
-      impactEn: 'Rate differential: Accelerated ECB rate reduction pace erodes Euro yield support versus USD.',
       timeAgo: 'il y a 3 h',
       dateStr: '02/11'
     },
-
-    // 10. LE MONDE (FR)
     {
       id: 'lmd-1',
       title: 'Économie mondiale : Comment les tensions géopolitiques et le détroit d\'Ormuz dictent la volatilité',
@@ -325,9 +250,6 @@ window.NewsFeed = (() => {
       publisher: 'Le Monde (Éco)',
       lang: 'fr',
       category: 'Géopolitique',
-      pair: 'EUR/USD',
-      impactFr: 'Risque géopolitique : Les épisodes de crise provoquent des afflux vers le dollar, agissant comme valeur refuge mondiale.',
-      impactEn: 'Safe-haven flows: Crisis spikes systematically trigger capital flight toward US dollar assets.',
       timeAgo: 'il y a 2 h',
       dateStr: '02/11'
     },
@@ -339,14 +261,9 @@ window.NewsFeed = (() => {
       publisher: 'Le Monde (International)',
       lang: 'fr',
       category: 'Macroéconomie',
-      pair: 'EUR/USD',
-      impactFr: 'Commerce extérieur : Les incertitudes douanières rendent indispensable le verrouillage du budget de change pour 2026/2027.',
-      impactEn: 'Trade risk: Tariff uncertainties make multi-quarter currency hedging essential for margin stability.',
       timeAgo: 'il y a 4 h',
       dateStr: '02/11'
     },
-
-    // 11. LE FIGARO ÉCONOMIE (FR)
     {
       id: 'fig-1',
       title: 'Franc suisse : La BNS réaffirme sa politique pragmatique face aux flux de capitaux refuges',
@@ -355,9 +272,6 @@ window.NewsFeed = (() => {
       publisher: 'Le Figaro Économie',
       lang: 'fr',
       category: 'Banques Centrales',
-      pair: 'EUR/CHF',
-      impactFr: 'EUR/CHF : La BNS agit comme amortisseur pour éviter une surévaluation excessive du franc suisse face à l\'euro.',
-      impactEn: 'EUR/CHF: SNB presence provides a dampener against excessive Swiss Franc appreciation.',
       timeAgo: 'il y a 3 h',
       dateStr: '02/11'
     },
@@ -369,14 +283,9 @@ window.NewsFeed = (() => {
       publisher: 'Le Figaro Économie',
       lang: 'fr',
       category: 'Énergie & Pétrole',
-      pair: 'EUR/USD',
-      impactFr: 'Facture énergétique : La corrélation pétrole/dollar exige une stratégie intégrée matières premières et devises.',
-      impactEn: 'Energy bill: Dollar/oil correlation requires integrated corporate procurement and FX coverage.',
       timeAgo: 'il y a 5 h',
       dateStr: '02/11'
     },
-
-    // 12. BFM BUSINESS (FR)
     {
       id: 'bfm-1',
       title: 'Devises et taux : Comment les entreprises françaises sécurisent leurs marges face au dollar',
@@ -385,9 +294,6 @@ window.NewsFeed = (() => {
       publisher: 'BFM Business',
       lang: 'fr',
       category: 'FX & Devises',
-      pair: 'EUR/USD',
-      impactFr: 'Gestion de trésorerie : Le recours aux contrats à terme (FX Forwards) protège les marges contre une baisse sous 1,1100.',
-      impactEn: 'Corporate hedging: FX Forward contracts insulate margins from downside breaks below 1.1100.',
       timeAgo: 'il y a 1 h',
       dateStr: '02/11'
     },
@@ -399,60 +305,81 @@ window.NewsFeed = (() => {
       publisher: 'BFM Business',
       lang: 'fr',
       category: 'Macroéconomie',
-      pair: 'EUR/USD',
-      impactFr: 'Flux financiers : Les flux de capitaux soutenant les marchés américains renforcent indirectement le dollar.',
-      impactEn: 'Capital flows: Inflows into US markets indirectly underpin the greenback against G10 peers.',
       timeAgo: 'il y a 3 h',
       dateStr: '02/11'
     }
   ];
 
+  // ─── Default Exact Template Data from User's Screenshot & Prompt ───
+  const DEFAULT_EMAIL_DATA = {
+    clientName: 'XXXX',
+    pair: 'EUR/USD',
+    period: "la fin du mois d'août",
+    movePct: '4.05 %',
+    direction: 'défaveur', // 'défaveur' | 'faveur'
+    agendaUrl: 'https://calendar.app.google/18zB9wv3EnRyxmQBA',
+    
+    // Facteurs clés
+    keyFactors: [
+      {
+        id: 'kf-1',
+        title: 'Agitations et risques budgétaires en Europe',
+        url: 'https://www.theguardian.com/business/live/2026/oct/19/exports-lift-china-economic-growth-french-protests-pressure-euro-bonds-latest-business-live-updates',
+        desc: 'De violentes manifestations en France et en Italie incluant des couvre-feux et des dégradations sur des infrastructures historiques ont provoqué des ventes massives sur les actions et les obligations, ravivant les craintes sur la stabilité de la dette souveraine européenne.',
+        enabled: true
+      },
+      {
+        id: 'kf-2',
+        title: 'Incertitude politique aux États-Unis',
+        url: 'https://news.sky.com/story/trumps-approval-rating-hits-new-record-low-as-us-midterms-loom-13601177',
+        desc: 'La côte de popularité de Trump atteint un nouveau plus bas historique à l\'approche des élections américaines de mi-mandat.',
+        enabled: true
+      }
+    ],
+
+    // Événements à venir
+    upcomingEvents: [
+      {
+        id: 'ue-1',
+        title: 'Décision de la Fed sur les taux (28/10)',
+        url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
+        desc: 'Un catalyseur direct potentiel de la hausse du dollar et de la volatilité à court terme.',
+        enabled: true
+      },
+      {
+        id: 'ue-2',
+        title: 'Décision de la BCE sur les taux (29/10)',
+        url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
+        desc: 'Tous les regards sont tournés vers Christine Lagarde, car toute réorientation politique ou déclaration inattendue fera bouger les marchés.',
+        enabled: true
+      },
+      {
+        id: 'ue-3',
+        title: 'Élections américaines de mi-mandat (03/11)',
+        url: 'https://www.usnews.com/news/world/articles/2026-10-20/explainer-three-issues-defining-the-2026-us-midterm-elections',
+        desc: 'Les évolutions politiques représentent un risque majeur sur la paire EUR/USD',
+        enabled: true
+      }
+    ]
+  };
+
   // ─── State ───
   let state = {
-    activeSubTab: 'feed', // 'feed' | 'email-template'
+    activeSubTab: 'email-template', // Open email template by default as requested!
     articles: [],
     loading: false,
     lastUpdated: null,
-    viewMode: 'split', // 'split' | 'grid' | 'fr' | 'en'
-    activeLang: 'all',  // 'all' | 'fr' | 'en'
+    viewMode: 'split',
+    activeLang: 'all',
     activeCategory: 'all',
     activeSource: 'all',
     searchQuery: '',
     
-    // Email Template State
-    email: {
-      pair: 'EUR/USD',
-      clientProfile: 'import', // 'import' | 'export' | 'treasury'
-      refPeriod: 'custom',
-      refDateStr: '26/10/2026',
-      refRate: 1.1285,
-      currentRate: 1.1150,
-      customIntro: '',
-      lang: 'fr',
-      selectedArticleIds: ['reu-1', 'ing-1', 'fxe-1', 'gua-1'],
-      copiedType: null
-    }
+    // Email Template State (initialized from default model)
+    email: JSON.parse(JSON.stringify(DEFAULT_EMAIL_DATA))
   };
 
-  // ─── Rate Calculations ───
-  function computeMove() {
-    const cur = parseFloat(state.email.currentRate) || 1.1150;
-    const ref = parseFloat(state.email.refRate) || 1.1285;
-    const diff = cur - ref;
-    const pct = ((diff / ref) * 100);
-    const pips = state.email.pair.includes('JPY') ? diff * 100 : diff * 10000;
-    const isLoss = diff < 0; // for base currency (EUR in EUR/USD)
-    return {
-      cur: cur.toFixed(4),
-      ref: ref.toFixed(4),
-      pctStr: (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%',
-      pctVal: pct,
-      pipsStr: (pips >= 0 ? '+' : '') + Math.round(pips) + ' pips',
-      isLoss
-    };
-  }
-
-  // ─── Fetch Articles (Server + Rich Curated Fallback) ───
+  // ─── Fetch Articles ───
   async function fetchArticles(force = false) {
     if (state.loading) return;
     state.loading = true;
@@ -482,22 +409,13 @@ window.NewsFeed = (() => {
       throw new Error('Fallback required');
     } catch (err) {
       console.warn('Using curated verified press catalogue:', err.message);
-      state.articles = CURATED_ARTICLES;
+      state.articles = CURATED_FEED;
       state.lastUpdated = new Date();
       if (window.App && window.App.showToast) {
-        window.App.showToast(`Veille chargée : ${CURATED_ARTICLES.length} articles vérifiés disponibles !`, 'info');
+        window.App.showToast(`Veille chargée : ${CURATED_FEED.length} articles vérifiés disponibles !`, 'info');
       }
     } finally {
       state.loading = false;
-      // Try to sync live rate for EUR/USD if MarketData is available
-      if (window.MarketData && window.MarketData.getPair) {
-        window.MarketData.getPair('EUR', 'USD').then(p => {
-          if (p && p.price) {
-            state.email.currentRate = p.price;
-            render();
-          }
-        }).catch(() => {});
-      }
       render();
     }
   }
@@ -568,12 +486,6 @@ window.NewsFeed = (() => {
               ${article.summary}
             </p>
           ` : ''}
-
-          ${article.impactFr ? `
-            <div style="background:#f8fafc; border-left:3px solid #3b82f6; padding:6px 8px; border-radius:0 4px 4px 0; font-size:10.5px; color:#1e3a8a; line-height:1.3; margin-bottom:8px;">
-              <strong>Implication ${article.pair || 'FX'} :</strong> ${article.impactFr}
-            </div>
-          ` : ''}
         </div>
 
         <div style="margin-top:12px; padding-top:10px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; font-size:11px;">
@@ -596,306 +508,309 @@ window.NewsFeed = (() => {
     `;
   }
 
-  // ─── Generate Commercial Email HTML & PlainText ───
-  function generateEmailContent() {
-    const isFr = state.email.lang === 'fr';
-    const m = computeMove();
-    const pair = state.email.pair;
-    const [base, quote] = pair.split('/');
-    const isLoss = m.isLoss;
+  // ─── Generate Exact Email Content matching User Model ───
+  function generateExactEmail() {
+    const e = state.email;
+    const kf = e.keyFactors.filter(x => x.enabled);
+    const ue = e.upcomingEvents.filter(x => x.enabled);
 
-    // Pick selected articles from available list
-    const pool = CURATED_ARTICLES;
-    const selected = pool.filter(a => state.email.selectedArticleIds.includes(a.id));
+    const subject = `Revolut Business - Couverture de change - Suivi de Marché`;
 
-    // Dynamic commercial analysis
-    let clientAngleFr = '';
-    let clientAngleEn = '';
-    if (state.email.clientProfile === 'import') {
-      clientAngleFr = `Pour vos flux d'achat de ${quote} (importation de marchandises / licences / composants), ce mouvement de <strong>${m.pctStr}</strong> représente un <strong>renchérissement direct de vos coûts d'approvisionnement</strong> si vos positions ne sont pas sécurisées.`;
-      clientAngleEn = `For your ${quote} procurement flows (imports, software, raw materials), this <strong>${m.pctStr}</strong> movement creates a <strong>direct increase in sourcing costs</strong> unless hedged.`;
-    } else if (state.email.clientProfile === 'export') {
-      clientAngleFr = `Pour vos encaissements en ${quote} (exportations), cette évolution de <strong>${m.pctStr}</strong> améliore la valorisation en ${base} et offre un <strong>point d'entrée opportun pour verrouiller votre taux budgétaire</strong>.`;
-      clientAngleEn = `For your ${quote} export receivables, this <strong>${m.pctStr}</strong> change enhances ${base} conversion value and presents an <strong>attractive window to secure budget margins</strong>.`;
-    } else {
-      clientAngleFr = `Ce mouvement de <strong>${m.pctStr} (${m.pipsStr})</strong> modifie significativement les équilibres de valorisation de votre trésorerie sur le cross ${pair}.`;
-      clientAngleEn = `This <strong>${m.pctStr} (${m.pipsStr})</strong> movement alters corporate balance sheet valuation benchmarks on ${pair}.`;
-    }
-
-    const subject = isFr
-      ? `[Point Marché ${pair}] Alerte mouvement de ${m.pctStr} depuis le ${state.email.refDateStr} & actualités clés`
-      : `[${pair} Market Update] ${m.pctStr} shift since ${state.email.refDateStr} & key catalysts ahead`;
-
-    // Rich HTML for Outlook / Gmail
+    // Exact Clean HTML formatted for Gmail / Outlook
     const htmlBody = `
-<div style="font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size:14px; line-height:1.55; color:#1e293b; max-width:640px; margin:0 auto; padding:20px; border:1px solid #e2e8f0; border-radius:8px; background:#ffffff;">
+<div style="font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; line-height: 1.55; color: #111827; max-width: 680px; margin: 0 auto; background: #ffffff;">
   
-  <!-- Header Branding -->
-  <div style="border-bottom:2px solid #1e3a8a; padding-bottom:12px; margin-bottom:16px; display:flex; justify-content:space-between; align-items:center;">
-    <div>
-      <div style="font-size:16px; font-weight:800; color:#1e3a8a; letter-spacing:0.3px;">KEVIN SAUDUBRAY</div>
-      <div style="font-size:11px; color:#64748b; font-weight:600; text-transform:uppercase;">FX & Macro Market Intelligence • Revolut Business</div>
-    </div>
-    <div style="text-align:right;">
-      <span style="background:${isLoss ? '#fee2e2' : '#dcfce7'}; color:${isLoss ? '#991b1b' : '#166534'}; font-size:12px; font-weight:800; padding:4px 8px; border-radius:4px; border:1px solid ${isLoss ? '#fca5a5' : '#86efac'};">
-        ${pair} : ${m.cur} (${m.pctStr})
-      </span>
-    </div>
-  </div>
-
-  <p style="margin-top:0;">Bonjour,</p>
-
-  <!-- Market Alert Box -->
-  <div style="background:${isLoss ? '#fef2f2' : '#f0fdf4'}; border-left:4px solid ${isLoss ? '#dc2626' : '#16a34a'}; padding:12px 14px; border-radius:0 6px 6px 0; margin-bottom:16px;">
-    <div style="font-size:13px; font-weight:700; color:${isLoss ? '#991b1b' : '#166534'}; margin-bottom:4px;">
-      ⚠️ ${isFr ? `Alerte Cours ${pair} : ${isLoss ? 'Recul' : 'Hausse'} de ${m.pctStr} (${m.pipsStr})` : `${pair} Market Alert: ${m.pctStr} (${m.pipsStr}) move`}
-    </div>
-    <div style="font-size:12.5px; color:#334155; line-height:1.45;">
-      ${isFr 
-        ? `Depuis le <strong>${state.email.refDateStr}</strong> (où le cours s'établissait à <strong>${m.ref}</strong>), l'EUR/USD a ${isLoss ? 'cédé' : 'gagné'} <strong>${m.pctStr}</strong> pour s'établir aujourd'hui à <strong>${m.cur}</strong>.`
-        : `Since <strong>${state.email.refDateStr}</strong> (when the rate stood at <strong>${m.ref}</strong>), ${pair} has moved by <strong>${m.pctStr}</strong> to reach <strong>${m.cur}</strong> today.`}
-    </div>
-    <div style="font-size:12px; color:#475569; margin-top:6px;">
-      ${isFr ? clientAngleFr : clientAngleEn}
-    </div>
-  </div>
-
-  <!-- Catalysts & Hyperlinked Articles Section -->
-  <div style="margin-bottom:16px;">
-    <div style="font-size:13px; font-weight:800; color:#1e3a8a; text-transform:uppercase; margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:4px;">
-      📰 ${isFr ? 'Actualités clés & implications à court terme sur la paire' : 'Key catalysts & expected market impact ahead'}
-    </div>
-    <div style="font-size:12px; color:#64748b; margin-bottom:10px;">
-      ${isFr 
-        ? 'Voici les publications institutionnelles récentes et les catalyseurs à venir décryptés pour votre trésorerie :' 
-        : 'Recent institutional reporting and upcoming catalysts decoded for your corporate treasury:'}
-    </div>
-
-    <ul style="margin:0; padding-left:18px; line-height:1.55; font-size:12.5px;">
-      ${selected.map(a => `
-        <li style="margin-bottom:10px;">
-          <a href="${a.link}" target="_blank" rel="noopener noreferrer" style="color:#1d4ed8; text-decoration:none; font-weight:700;">
-            ${a.title} ↗
-          </a>
-          <span style="font-size:11px; color:#64748b;"> (Source: <strong>${a.publisher}</strong>)</span>
-          <div style="font-size:12px; color:#334155; background:#f8fafc; border-left:2px solid #3b82f6; padding:4px 8px; margin-top:3px; border-radius:0 4px 4px 0;">
-            <strong>${isFr ? 'Implication attendue :' : 'Expected impact:'}</strong> ${isFr ? (a.impactFr || a.summary) : (a.impactEn || a.summary)}
-          </div>
-        </li>
-      `).join('')}
-    </ul>
-  </div>
-
-  <!-- Actionable Recommendations & Tools -->
-  <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:6px; padding:12px 14px; margin-bottom:16px; font-size:12px; line-height:1.45; color:#334155;">
-    <strong style="color:#1e3a8a; font-size:12.5px;">💡 ${isFr ? 'Repères & outils de gestion de trésorerie :' : 'Treasury management tools & anchors:'}</strong>
-    <ul style="margin:6px 0 0 0; padding-left:16px;">
-      <li><strong>${isFr ? 'Seuils techniques à surveiller :' : 'Key technical levels:'}</strong> Support 1,1120 – 1,1080 | Résistance 1,1220 – 1,1250</li>
-      <li><strong>${isFr ? 'Ordre limite (Auto-exécution) :' : 'Limit order (Auto-execute):'}</strong> ${isFr ? 'Programmez un cours cible d\'achat/vente exécuté automatiquement 24/7 sans surveiller les écrans.' : 'Set an automatic target exchange rate executed 24/7 without manual monitoring.'}</li>
-      <li><strong>${isFr ? 'Contrat à terme (Forward FX) :' : 'Forward FX contracts:'}</strong> ${isFr ? 'Verrouillez votre taux de change jusqu\'à 12 mois pour sécuriser vos budgets à cours fixe.' : 'Lock in fixed commercial exchange rates up to 12 months in advance.'}</li>
-    </ul>
-  </div>
-
-  <!-- Signoff -->
-  <p style="margin-bottom:4px; font-size:12.5px;">
-    ${isFr 
-      ? 'Je reste à votre entière disposition pour vous accompagner dans la mise en place de vos stratégies de change et l\'analyse des flux.'
-      : 'I remain available to assist you in setting up your FX risk mitigation frameworks and execution setups.'}
+  <p style="margin: 0 0 14px 0;">Bonjour ${e.clientName},</p>
+  
+  <p style="margin: 0 0 14px 0;">J’espère que vous allez bien.</p>
+  
+  <p style="margin: 0 0 14px 0;">
+    Depuis ${e.period}, nous avons observé un mouvement de <strong>${e.movePct}</strong> en votre ${e.direction} sur la paire ${e.pair}.
   </p>
-  <div style="margin-top:16px; border-top:1px solid #e2e8f0; padding-top:10px; font-size:12px; color:#475569;">
-    <strong>Kevin Saudubray</strong><br>
-    FX & Corporate Solutions • Revolut Business<br>
-    <a href="mailto:kevin.saudubray@revolut.com" style="color:#2563eb; text-decoration:none;">kevin.saudubray@revolut.com</a>
-  </div>
-
-  <!-- Regulatory Disclaimer -->
-  <div style="margin-top:14px; border-top:1px dashed #cbd5e1; padding-top:8px; font-size:10px; color:#94a3b8; line-height:1.3; font-style:italic;">
-    ${isFr
-      ? 'Cette communication est fournie à titre purement factuel et informatif. Elle ne constitue en aucun cas un conseil en investissement, une recommandation financière ou une sollicitation d\'achat ou de vente. Les données de marché sont issues de sources publiques vérifiées.'
-      : 'This communication is provided strictly for factual and informational purposes only. It does not constitute investment advice, financial recommendation, or solicitation. Market data is sourced from verified public outlets.'}
-  </div>
+  
+  <p style="margin: 0 0 14px 0;">
+    Au cours des prochaines semaines, plusieurs événements majeurs sont susceptibles d'impacter directement le taux de change. Vous trouverez plus de détails ci-dessous :
+  </p>
+  
+  <p style="margin: 18px 0 8px 0; font-weight: bold; font-size: 13.5px; color: #111827;">
+    Facteurs clés
+  </p>
+  
+  <ul style="margin: 0 0 16px 0; padding-left: 20px; line-height: 1.55;">
+    ${kf.map(f => `
+      <li style="margin-bottom: 8px;">
+        <a href="${f.url}" target="_blank" rel="noopener noreferrer" style="color: #1a73e8; text-decoration: none; font-weight: 500;">
+          ${f.title}
+        </a> : ${f.desc}
+      </li>
+    `).join('')}
+  </ul>
+  
+  <p style="margin: 18px 0 8px 0; font-weight: bold; font-size: 13.5px; color: #111827;">
+    Événements à venir
+  </p>
+  
+  <ul style="margin: 0 0 18px 0; padding-left: 20px; line-height: 1.55;">
+    ${ue.map(u => `
+      <li style="margin-bottom: 8px;">
+        <a href="${u.url}" target="_blank" rel="noopener noreferrer" style="color: #1a73e8; text-decoration: none; font-weight: 500;">
+          ${u.title}
+        </a> : ${u.desc}
+      </li>
+    `).join('')}
+  </ul>
+  
+  <p style="margin: 0 0 14px 0;">
+    Je reste à votre disposition si vous souhaitez en discuter ou si vous souhaitez reprendre une ligne de couverture de change.
+  </p>
+  
+  <p style="margin: 0 0 18px 0;">
+    N'hésitez pas à sélectionner le créneau qui vous convient le mieux <a href="${e.agendaUrl}" target="_blank" rel="noopener noreferrer" style="color: #1a73e8; text-decoration: none; font-weight: 500;">directement dans mon agenda</a>.
+  </p>
+  
+  <p style="margin: 0 0 4px 0;">Bien cordialement,</p>
+  <p style="margin: 0; font-weight: 600; color: #374151;">Kevin Saudubray</p>
 </div>`;
 
-    // Plain text for Slack / WhatsApp / Text emails
-    const plainText = `${subject}
+    // Exact Plain Text / Markdown
+    const plainText = `Bonjour ${e.clientName},
 
-Bonjour,
+J’espère que vous allez bien.
 
-⚠️ ${isFr ? `Alerte Marché ${pair} : ${isLoss ? 'Recul' : 'Hausse'} de ${m.pctStr} (${m.pipsStr})` : `${pair} Market Alert: ${m.pctStr} (${m.pipsStr}) move`}
-${isFr 
-  ? `Depuis le ${state.email.refDateStr} (cours à ${m.ref}), l'EUR/USD a ${isLoss ? 'cédé' : 'gagné'} ${m.pctStr} pour s'établir aujourd'hui à ${m.cur}.`
-  : `Since ${state.email.refDateStr} (rate at ${m.ref}), ${pair} moved by ${m.pctStr} to ${m.cur} today.`}
+Depuis ${e.period}, nous avons observé un mouvement de ${e.movePct} en votre ${e.direction} sur la paire ${e.pair}.
 
-${isFr ? clientAngleFr.replace(/<[^>]*>/g, '') : clientAngleEn.replace(/<[^>]*>/g, '')}
+Au cours des prochaines semaines, plusieurs événements majeurs sont susceptibles d'impacter directement le taux de change. Vous trouverez plus de détails ci-dessous :
 
-ACTUALITÉS CLÉS & IMPLICATIONS ATTENDUES :
-${selected.map(a => `• ${a.title} (${a.publisher})\n  Lien : ${a.link}\n  Implication : ${isFr ? (a.impactFr || a.summary) : (a.impactEn || a.summary)}`).join('\n\n')}
+Facteurs clés
 
-OUTILS & REPÈRES REVOLUT BUSINESS :
-- Support clé : 1,1120 – 1,1080 | Résistance : 1,1220 – 1,1250
-- Ordre limite : Programmation d'un cours d'exécution automatique
-- Contrat à terme (Forward FX) : Taux fixe garanti jusqu'à 12 mois
+${kf.map(f => `• [${f.title}](${f.url}) : ${f.desc}`).join('\n')}
 
-Kevin Saudubray
-FX & Corporate Solutions • Revolut Business
-${isFr ? 'Communication factuelle - Ne constitue pas un conseil en investissement.' : 'Factual market communication - Not financial advice.'}`;
+Événements à venir
 
-    return { subject, htmlBody, plainText, m };
+${ue.map(u => `• [${u.title}](${u.url}) : ${u.desc}`).join('\n')}
+
+Je reste à votre disposition si vous souhaitez en discuter ou si vous souhaitez reprendre une ligne de couverture de change.
+
+N'hésitez pas à sélectionner le créneau qui vous convient le mieux [directement dans mon agenda](${e.agendaUrl}).
+
+Bien cordialement,
+Kevin Saudubray`;
+
+    return { subject, htmlBody, plainText };
   }
 
-  // ─── Render Email Generator Sub-Tab ───
+  // ─── Render Email Template Sub-Tab ───
   function renderEmailGeneratorTab() {
-    const isFr = state.email.lang === 'fr';
-    const emailData = generateEmailContent();
-    const m = emailData.m;
-    const pool = CURATED_ARTICLES;
+    const e = state.email;
+    const { subject, htmlBody } = generateExactEmail();
 
     return `
-      <div style="display:grid; grid-template-columns:400px 1fr; gap:24px; align-items:start;">
-        <!-- Left Panel: Generator Controls -->
+      <div style="display:grid; grid-template-columns: 420px 1fr; gap: 24px; align-items: start;">
+        
+        <!-- Left Column: Controls and Editor -->
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-          <div style="border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
-            <h3 style="margin:0 0 4px 0; font-size:15px; font-weight:800; color:#1e3a8a;">
-              ⚙️ Paramètres de l'Email Commercial
-            </h3>
-            <p style="margin:0; font-size:11.5px; color:#64748b;">
-              Configurez la variation constatée, le profil client et les articles à citer.
-            </p>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
+            <div>
+              <h3 style="margin:0 0 2px 0; font-size:15px; font-weight:800; color:#1e3a8a;">
+                ⚙️ Personnaliser l'Email
+              </h3>
+              <p style="margin:0; font-size:11.5px; color:#64748b;">
+                Modifiez les valeurs ou rétablissez le modèle de référence.
+              </p>
+            </div>
+            <button id="btn-reset-email-model" style="padding:4px 8px; font-size:10.5px; font-weight:700; background:#f1f5f9; color:#1e3a8a; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;" title="Rétablir le texte exact de votre exemple">
+              ↺ Réinitialiser
+            </button>
           </div>
 
-          <!-- Pair Selector -->
+          <!-- Client Name & Pair -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
+            <div>
+              <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
+                Nom du client
+              </label>
+              <input type="text" id="cfg-client-name" value="${e.clientName}" placeholder="XXXX ou prénom" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600;" />
+            </div>
+            <div>
+              <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
+                Paire de devises
+              </label>
+              <select id="cfg-pair" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; background:#ffffff;">
+                <option value="EUR/USD" ${e.pair === 'EUR/USD' ? 'selected' : ''}>EUR/USD</option>
+                <option value="EUR/CHF" ${e.pair === 'EUR/CHF' ? 'selected' : ''}>EUR/CHF</option>
+                <option value="CHF/USD" ${e.pair === 'CHF/USD' ? 'selected' : ''}>CHF/USD</option>
+                <option value="EUR/PLN" ${e.pair === 'EUR/PLN' ? 'selected' : ''}>EUR/PLN</option>
+                <option value="USD/PLN" ${e.pair === 'USD/PLN' ? 'selected' : ''}>USD/PLN</option>
+                <option value="USD/HUF" ${e.pair === 'USD/HUF' ? 'selected' : ''}>USD/HUF</option>
+                <option value="CZK/USD" ${e.pair === 'CZK/USD' ? 'selected' : ''}>CZK/USD</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Period & Move % -->
+          <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:10px; margin-bottom:14px;">
+            <div>
+              <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
+                Depuis quand ?
+              </label>
+              <input type="text" id="cfg-period" value="${e.period}" placeholder="la fin du mois d'août" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600;" />
+            </div>
+            <div>
+              <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
+                Mouvement %
+              </label>
+              <input type="text" id="cfg-move-pct" value="${e.movePct}" placeholder="4.05 %" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; color:#dc2626;" />
+            </div>
+          </div>
+
+          <!-- Direction Toggle: Défaveur vs Faveur -->
           <div style="margin-bottom:14px;">
-            <label style="display:block; font-size:11px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:5px;">
-              1. Paire de devises
+            <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
+              Sens de la variation
             </label>
-            <select id="email-pair-select" style="width:100%; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; background:#f8fafc;">
-              <option value="EUR/USD" ${state.email.pair === 'EUR/USD' ? 'selected' : ''}>🇪🇺/🇺🇸 EUR/USD (Euro / US Dollar)</option>
-              <option value="EUR/CHF" ${state.email.pair === 'EUR/CHF' ? 'selected' : ''}>🇪🇺/🇨🇭 EUR/CHF (Euro / Franc Suisse)</option>
-              <option value="CHF/USD" ${state.email.pair === 'CHF/USD' ? 'selected' : ''}>🇨🇭/🇺🇸 CHF/USD (Franc Suisse / US Dollar)</option>
-              <option value="EUR/PLN" ${state.email.pair === 'EUR/PLN' ? 'selected' : ''}>🇪🇺/🇵🇱 EUR/PLN (Euro / Zloty Polonais)</option>
-              <option value="USD/PLN" ${state.email.pair === 'USD/PLN' ? 'selected' : ''}>🇺🇸/🇵🇱 USD/PLN (US Dollar / Zloty Polonais)</option>
-              <option value="USD/HUF" ${state.email.pair === 'USD/HUF' ? 'selected' : ''}>🇺🇸/🇭🇺 USD/HUF (US Dollar / Forint Hongrois)</option>
-              <option value="CZK/USD" ${state.email.pair === 'CZK/USD' ? 'selected' : ''}>🇨🇿/🇺🇸 CZK/USD (Couronne Tchèque / US Dollar)</option>
-            </select>
-          </div>
-
-          <!-- Client Profile -->
-          <div style="margin-bottom:14px;">
-            <label style="display:block; font-size:11px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:5px;">
-              2. Profil Client / Angle commercial
-            </label>
-            <select id="email-profile-select" style="width:100%; padding:7px 10px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600; background:#f8fafc;">
-              <option value="import" ${state.email.clientProfile === 'import' ? 'selected' : ''}>🏢 Importateur / Acheteur de devises (sensible à la baisse d'EUR)</option>
-              <option value="export" ${state.email.clientProfile === 'export' ? 'selected' : ''}>🚢 Exportateur / Vendeur de devises (sécurisation de marge)</option>
-              <option value="treasury" ${state.email.clientProfile === 'treasury' ? 'selected' : ''}>💼 Trésorier Corporate (surveillance globale de trésorerie)</option>
-            </select>
-          </div>
-
-          <!-- Reference Date & Rate Comparison -->
-          <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:12px; margin-bottom:14px;">
-            <div style="font-size:11px; font-weight:800; color:#1e40af; text-transform:uppercase; margin-bottom:8px; display:flex; justify-content:space-between;">
-              <span>3. Calcul de variation de cours</span>
-              <button id="btn-sync-email-rate" style="border:none; background:none; color:#2563eb; font-weight:700; font-size:10.5px; cursor:pointer;">🔄 Sync Spot</button>
-            </div>
-            
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:8px;">
-              <div>
-                <label style="font-size:10px; color:#64748b; font-weight:600;">Date de référence :</label>
-                <input type="text" id="email-ref-date" value="${state.email.refDateStr}" placeholder="26/10/2026" style="width:100%; padding:5px 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:11px; font-weight:700;" />
-              </div>
-              <div>
-                <label style="font-size:10px; color:#64748b; font-weight:600;">Cours de référence :</label>
-                <input type="number" step="0.0001" id="email-ref-rate" value="${state.email.refRate}" style="width:100%; padding:5px 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:11px; font-weight:700;" />
-              </div>
-            </div>
-
-            <div style="margin-bottom:8px;">
-              <label style="font-size:10px; color:#64748b; font-weight:600;">Cours Spot actuel :</label>
-              <input type="number" step="0.0001" id="email-cur-rate" value="${state.email.currentRate}" style="width:100%; padding:5px 8px; border:1px solid #cbd5e1; border-radius:4px; font-size:11px; font-weight:700; background:#ffffff;" />
-            </div>
-
-            <!-- Computed Pill -->
-            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:8px 10px; display:flex; justify-content:space-between; align-items:center;">
-              <span style="font-size:11px; font-weight:600; color:#475569;">Variation calculée :</span>
-              <span style="font-size:12px; font-weight:800; color:${m.isLoss ? '#dc2626' : '#16a34a'}; background:${m.isLoss ? '#fee2e2' : '#dcfce7'}; padding:2px 8px; border-radius:4px;">
-                ${m.pctStr} (${m.pipsStr})
-              </span>
+            <div style="display:flex; gap:8px;">
+              <button class="dir-toggle-btn ${e.direction === 'défaveur' ? 'active' : ''}" data-dir="défaveur" style="flex:1; padding:6px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; border:1px solid ${e.direction === 'défaveur' ? '#dc2626' : '#cbd5e1'}; background:${e.direction === 'défaveur' ? '#fee2e2' : '#ffffff'}; color:${e.direction === 'défaveur' ? '#991b1b' : '#475569'};">
+                🔻 en votre défaveur
+              </button>
+              <button class="dir-toggle-btn ${e.direction === 'faveur' ? 'active' : ''}" data-dir="faveur" style="flex:1; padding:6px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; border:1px solid ${e.direction === 'faveur' ? '#16a34a' : '#cbd5e1'}; background:${e.direction === 'faveur' ? '#dcfce7' : '#ffffff'}; color:${e.direction === 'faveur' ? '#166534' : '#475569'};">
+                🔺 en votre faveur
+              </button>
             </div>
           </div>
 
-          <!-- Articles / Catalysts Checkbox Selector -->
-          <div style="margin-bottom:14px;">
+          <!-- Facteurs Clés Manager -->
+          <div style="margin-bottom:16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <label style="font-size:11px; font-weight:700; color:#1e293b; text-transform:uppercase;">
-                4. Actualités & Catalyseurs à citer (${state.email.selectedArticleIds.length} sélectionnés)
+              <label style="font-size:11px; font-weight:800; color:#1e40af; text-transform:uppercase;">
+                Facteurs clés (${e.keyFactors.filter(x => x.enabled).length} actifs)
               </label>
             </div>
-            <div style="max-height:220px; overflow-y:auto; border:1px solid #cbd5e1; border-radius:6px; padding:6px; background:#f8fafc; display:flex; flex-direction:column; gap:6px;">
-              ${pool.map(a => {
-                const checked = state.email.selectedArticleIds.includes(a.id);
-                return `
-                  <label style="display:flex; align-items:flex-start; gap:8px; padding:6px; border-radius:4px; background:${checked ? '#eff6ff' : '#ffffff'}; border:1px solid ${checked ? '#93c5fd' : '#e2e8f0'}; cursor:pointer; font-size:11px;">
-                    <input type="checkbox" class="email-catalyst-check" data-id="${a.id}" ${checked ? 'checked' : ''} style="margin-top:2px;" />
-                    <div style="flex:1;">
-                      <div style="font-weight:700; color:#1e3a8a; line-height:1.25; margin-bottom:2px;">
-                        [${a.publisher}] ${a.title}
-                      </div>
-                      <div style="font-size:9.5px; color:#64748b; line-height:1.2;">
-                        ${a.impactFr || a.summary}
-                      </div>
-                    </div>
-                  </label>
-                `;
-              }).join('')}
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${e.keyFactors.map((kf, i) => `
+                <div style="background:#f8fafc; border:1px solid ${kf.enabled ? '#93c5fd' : '#e2e8f0'}; border-radius:6px; padding:8px 10px; font-size:11px;">
+                  <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                    <input type="checkbox" class="chk-kf" data-idx="${i}" ${kf.enabled ? 'checked' : ''} />
+                    <input type="text" class="inp-kf-title" data-idx="${i}" value="${kf.title}" style="flex:1; font-weight:700; color:#1a73e8; border:1px solid transparent; background:transparent; font-size:11px; outline:none;" />
+                  </div>
+                  <div style="margin-left:22px;">
+                    <input type="text" class="inp-kf-url" data-idx="${i}" value="${kf.url}" placeholder="URL de l'article" style="width:100%; font-size:9.5px; color:#64748b; border:1px solid #cbd5e1; border-radius:3px; padding:2px 4px; margin-bottom:4px;" />
+                    <textarea class="inp-kf-desc" data-idx="${i}" rows="2" style="width:100%; font-size:10.5px; color:#334155; border:1px solid #cbd5e1; border-radius:3px; padding:3px 4px; resize:vertical;">${kf.desc}</textarea>
+                  </div>
+                </div>
+              `).join('')}
             </div>
           </div>
 
-          <!-- Language Selector -->
-          <div style="margin-bottom:14px;">
-            <label style="display:block; font-size:11px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:5px;">
-              5. Langue de rédaction
-            </label>
-            <div style="display:flex; gap:8px;">
-              <button class="email-lang-btn ${state.email.lang === 'fr' ? 'active' : ''}" data-lang="fr" style="flex:1; padding:6px; border-radius:4px; font-size:11.5px; font-weight:700; cursor:pointer; border:1px solid ${state.email.lang === 'fr' ? '#dc2626' : '#cbd5e1'}; background:${state.email.lang === 'fr' ? '#fee2e2' : '#ffffff'}; color:${state.email.lang === 'fr' ? '#991b1b' : '#334155'};">
-                🇫🇷 Français
-              </button>
-              <button class="email-lang-btn ${state.email.lang === 'en' ? 'active' : ''}" data-lang="en" style="flex:1; padding:6px; border-radius:4px; font-size:11.5px; font-weight:700; cursor:pointer; border:1px solid ${state.email.lang === 'en' ? '#2563eb' : '#cbd5e1'}; background:${state.email.lang === 'en' ? '#dbeafe' : '#ffffff'}; color:${state.email.lang === 'en' ? '#1e40af' : '#334155'};">
-                🇬🇧 English
-              </button>
+          <!-- Événements à venir Manager -->
+          <div style="margin-bottom:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="font-size:11px; font-weight:800; color:#1e40af; text-transform:uppercase;">
+                Événements à venir (${e.upcomingEvents.filter(x => x.enabled).length} actifs)
+              </label>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              ${e.upcomingEvents.map((ue, i) => `
+                <div style="background:#f8fafc; border:1px solid ${ue.enabled ? '#93c5fd' : '#e2e8f0'}; border-radius:6px; padding:8px 10px; font-size:11px;">
+                  <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
+                    <input type="checkbox" class="chk-ue" data-idx="${i}" ${ue.enabled ? 'checked' : ''} />
+                    <input type="text" class="inp-ue-title" data-idx="${i}" value="${ue.title}" style="flex:1; font-weight:700; color:#1a73e8; border:1px solid transparent; background:transparent; font-size:11px; outline:none;" />
+                  </div>
+                  <div style="margin-left:22px;">
+                    <input type="text" class="inp-ue-url" data-idx="${i}" value="${ue.url}" placeholder="URL de l'article" style="width:100%; font-size:9.5px; color:#64748b; border:1px solid #cbd5e1; border-radius:3px; padding:2px 4px; margin-bottom:4px;" />
+                    <textarea class="inp-ue-desc" data-idx="${i}" rows="2" style="width:100%; font-size:10.5px; color:#334155; border:1px solid #cbd5e1; border-radius:3px; padding:3px 4px; resize:vertical;">${ue.desc}</textarea>
+                  </div>
+                </div>
+              `).join('')}
             </div>
           </div>
+
+          <!-- Agenda Link -->
+          <div>
+            <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
+              Lien direct agenda (Google Calendar)
+            </label>
+            <input type="text" id="cfg-agenda-url" value="${e.agendaUrl}" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:11px; color:#1a73e8;" />
+          </div>
+
         </div>
 
-        <!-- Right Panel: Rendered Email Preview & Export Actions -->
+        <!-- Right Column: Authentic Gmail Screenshot-Style Preview -->
         <div>
-          <!-- Top Action Bar for Email -->
-          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px 10px 0 0; padding:14px 18px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <div>
-              <div style="font-size:10px; font-weight:800; color:#64748b; text-transform:uppercase;">Objet de l'email :</div>
-              <div style="font-size:13.5px; font-weight:700; color:#0f172a;" id="email-subject-display">
-                ${emailData.subject}
-              </div>
+          <!-- Action Buttons Bar -->
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px 10px 0 0; padding:12px 18px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:14px;">✉️</span>
+              <span style="font-size:13px; font-weight:800; color:#0f172a;">Aperçu Format Gmail / Outlook</span>
             </div>
             <div style="display:flex; gap:8px;">
-              <button id="btn-copy-email-html" style="padding:8px 14px; background:#1e3a8a; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
-                📋 Copier pour Outlook / Gmail (HTML riche)
+              <button id="btn-copy-gmail-html" style="padding:8px 14px; background:#1e3a8a; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                📋 Copier pour Gmail / Outlook (Format Riche)
               </button>
-              <button id="btn-copy-email-text" style="padding:8px 12px; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px;">
+              <button id="btn-copy-gmail-text" style="padding:8px 12px; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px;">
                 📝 Texte Brut
               </button>
             </div>
           </div>
 
-          <!-- Rendered HTML Box -->
-          <div style="background:#f1f5f9; padding:20px; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 10px 10px; max-height:800px; overflow-y:auto;" id="email-rendered-preview">
-            ${emailData.htmlBody}
+          <!-- Gmail UI Window Container (Matches the user's screenshot exactly!) -->
+          <div style="background:#ffffff; border:1px solid #e2e8f0; border-top:none; border-radius:0 0 10px 10px; box-shadow:0 2px 8px rgba(0,0,0,0.06); overflow:hidden;">
+            
+            <!-- Gmail Header Bar -->
+            <div style="padding:16px 24px 12px 24px; border-bottom:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <h2 style="margin:0; font-size:17px; font-weight:600; color:#111827; font-family:Google Sans, Roboto, Arial, sans-serif;">
+                  ${subject}
+                </h2>
+                <span style="font-size:10px; background:#e5e7eb; color:#4b5563; padding:2px 6px; border-radius:4px; font-weight:500;">
+                  Boîte de réception
+                </span>
+              </div>
+              <div style="display:flex; gap:12px; color:#6b7280; font-size:14px;">
+                <span>🖨️</span>
+                <span>↗</span>
+              </div>
+            </div>
+
+            <!-- Gmail Sender Info Row -->
+            <div style="padding:14px 24px; border-bottom:1px solid #f3f4f6; display:flex; justify-content:space-between; align-items:flex-start;">
+              <div style="display:flex; gap:12px; align-items:center;">
+                <!-- Revolut R Logo Avatar -->
+                <div style="width:36px; height:36px; border-radius:50%; background:#000000; color:#ffffff; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:900; font-family:Arial Black, sans-serif;">
+                  R
+                </div>
+                <div>
+                  <div style="display:flex; align-items:center; gap:5px;">
+                    <span style="font-size:13px; font-weight:700; color:#111827;">Kevin Saudubray</span>
+                    <!-- Verified Checkmark -->
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; background:#1d4ed8; color:#ffffff; border-radius:50%; font-size:8px; font-weight:900;">✓</span>
+                  </div>
+                  <div style="font-size:11.5px; color:#6b7280;">À moi ▾</div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; color:#6b7280; font-size:11.5px;">
+                <span>14:54 (il y a 1 minute)</span>
+                <span>⭐</span>
+                <span>😊</span>
+                <span>↩️</span>
+                <span>⋮</span>
+              </div>
+            </div>
+
+            <!-- Email Body Rendered -->
+            <div id="email-preview-content" style="padding:24px 28px 36px 28px; background:#ffffff;">
+              ${htmlBody}
+            </div>
+
           </div>
+
         </div>
+
       </div>
     `;
   }
 
-  // ─── Render Main Layout ───
+  // ─── Render Main Shell ───
   function render() {
     const root = document.getElementById('news-feed-root');
     if (!root) return;
@@ -920,17 +835,16 @@ ${isFr ? 'Communication factuelle - Ne constitue pas un conseil en investissemen
     root.innerHTML = `
       <div style="max-width:1440px; margin:0 auto; padding-bottom:40px;">
         <!-- Top Institutional Header -->
-        <div style="background:linear-gradient(135deg, #0a1628 0%, #1a2b4a 50%, #0d1f3c 100%); color:#ffffff; padding:24px 28px; border-radius:12px; margin-bottom:20px; box-shadow:0 4px 12px rgba(10, 22, 40, 0.15); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+        <div style="background:linear-gradient(135deg, #0a1628 0%, #1a2b4a 50%, #0d1f3c 100%); color:#ffffff; padding:22px 28px; border-radius:12px; margin-bottom:20px; box-shadow:0 4px 12px rgba(10, 22, 40, 0.15); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
           <div>
             <div style="display:inline-flex; align-items:center; gap:6px; background:rgba(59, 130, 246, 0.2); border:1px solid rgba(96, 165, 250, 0.3); padding:3px 10px; border-radius:20px; font-size:10px; font-weight:800; letter-spacing:0.5px; color:#93c5fd; margin-bottom:8px;">
               <span>🌐</span> VEILLE INSTITUTIONNELLE & SALES INTELLIGENCE
             </div>
             <h1 style="margin:0 0 6px 0; font-size:22px; font-weight:800; letter-spacing:-0.3px;">
-              Veille FX, Géopolitique & Templates Commerciaux
+              Veille FX, Géopolitique & Template d'Email Commercial
             </h1>
             <p style="margin:0; font-size:12px; color:#cbd5e1; max-width:820px; line-height:1.4;">
-              Flux de presse quotidienne (Reuters, ING, FX Empire, Guardian, Sky, Investing, FXStreet, US News, Les Echos, Le Monde, Le Figaro) 
-              et générateur d'emails d'alerte commerciale avec calcul automatique de variation (% et pips) et analyse d'impact en 1 ligne.
+              Revue de presse continue (Reuters, ING, Guardian, Sky, Investing, FXStreet, US News, Les Echos...) et générateur d'emails d'alerte de change avec calcul automatique de variation (% et pips) et analyse d'impact en 1 ligne.
             </p>
           </div>
           <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px;">
@@ -945,16 +859,16 @@ ${isFr ? 'Communication factuelle - Ne constitue pas un conseil en investissemen
 
         <!-- Sub-Navigation: Feed vs Email Template -->
         <div style="display:flex; gap:10px; margin-bottom:20px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">
-          <button class="subtab-btn ${state.activeSubTab === 'feed' ? 'active' : ''}" data-subtab="feed" style="padding:10px 20px; font-size:13px; font-weight:800; cursor:pointer; border:none; background:${state.activeSubTab === 'feed' ? '#1e3a8a' : '#f1f5f9'}; color:${state.activeSubTab === 'feed' ? '#ffffff' : '#475569'}; border-radius:6px; display:flex; align-items:center; gap:8px; transition:all 0.15s;">
-            <span>📰</span> Revue de Presse & Articles en Direct (${totalAll})
-          </button>
           <button class="subtab-btn ${state.activeSubTab === 'email-template' ? 'active' : ''}" data-subtab="email-template" style="padding:10px 20px; font-size:13px; font-weight:800; cursor:pointer; border:none; background:${state.activeSubTab === 'email-template' ? '#1e3a8a' : '#f1f5f9'}; color:${state.activeSubTab === 'email-template' ? '#ffffff' : '#475569'}; border-radius:6px; display:flex; align-items:center; gap:8px; transition:all 0.15s;">
-            <span>✉️</span> Générateur d'Email Marché (EUR/USD & Alertes Cross)
-            <span style="font-size:10px; background:#f59e0b; color:#ffffff; padding:1px 6px; border-radius:10px;">PRO</span>
+            <span>✉️</span> Template d'Email Commercial (EUR/USD & Alertes Cross)
+            <span style="font-size:10px; background:#f59e0b; color:#ffffff; padding:1px 6px; border-radius:10px;">RECOMMANDÉ</span>
+          </button>
+          <button class="subtab-btn ${state.activeSubTab === 'feed' ? 'active' : ''}" data-subtab="feed" style="padding:10px 20px; font-size:13px; font-weight:800; cursor:pointer; border:none; background:${state.activeSubTab === 'feed' ? '#1e3a8a' : '#f1f5f9'}; color:${state.activeSubTab === 'feed' ? '#ffffff' : '#475569'}; border-radius:6px; display:flex; align-items:center; gap:8px; transition:all 0.15s;">
+            <span>📰</span> Revue de Presse & Dépêches en Direct (${totalAll})
           </button>
         </div>
 
-        <!-- Render active subtab content -->
+        <!-- Subtab Content -->
         ${state.activeSubTab === 'email-template' ? renderEmailGeneratorTab() : `
           <!-- Toolbar for Feed -->
           <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:16px 20px; margin-bottom:20px; box-shadow:0 1px 3px rgba(0,0,0,0.04);">
@@ -1021,7 +935,7 @@ ${isFr ? 'Communication factuelle - Ne constitue pas un conseil en investissemen
             </div>
           </div>
 
-          <!-- Feed Content -->
+          <!-- Feed Grid Content -->
           ${(() => {
             if (filtered.length === 0) {
               return `
@@ -1084,9 +998,9 @@ ${isFr ? 'Communication factuelle - Ne constitue pas un conseil en investissemen
     bindEvents();
   }
 
-  // ─── Event Listeners ───
+  // ─── Bind Events ───
   function bindEvents() {
-    // Sub-tab switching
+    // Sub-tab switcher
     document.querySelectorAll('.subtab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         state.activeSubTab = btn.dataset.subtab;
@@ -1176,80 +1090,111 @@ ${isFr ? 'Communication factuelle - Ne constitue pas un conseil en investissemen
       });
     });
 
-    // ─── EMAIL TEMPLATE CONTROLS ───
-    document.getElementById('email-pair-select')?.addEventListener('change', (e) => {
+    // ─── EMAIL TEMPLATE INTERACTIVE CONTROLS ───
+    document.getElementById('cfg-client-name')?.addEventListener('input', (e) => {
+      state.email.clientName = e.target.value || 'XXXX';
+      updateEmailPreviewOnly();
+    });
+
+    document.getElementById('cfg-pair')?.addEventListener('change', (e) => {
       state.email.pair = e.target.value;
-      const [b, q] = e.target.value.split('/');
-      if (window.MarketData && window.MarketData.getPair) {
-        window.MarketData.getPair(b, q).then(p => {
-          if (p && p.price) {
-            state.email.currentRate = p.price;
-            render();
-          }
-        }).catch(() => render());
-      } else {
-        render();
-      }
+      updateEmailPreviewOnly();
     });
 
-    document.getElementById('email-profile-select')?.addEventListener('change', (e) => {
-      state.email.clientProfile = e.target.value;
-      render();
+    document.getElementById('cfg-period')?.addEventListener('input', (e) => {
+      state.email.period = e.target.value;
+      updateEmailPreviewOnly();
     });
 
-    document.getElementById('email-ref-date')?.addEventListener('input', (e) => {
-      state.email.refDateStr = e.target.value;
-      render();
+    document.getElementById('cfg-move-pct')?.addEventListener('input', (e) => {
+      state.email.movePct = e.target.value;
+      updateEmailPreviewOnly();
     });
 
-    document.getElementById('email-ref-rate')?.addEventListener('input', (e) => {
-      state.email.refRate = parseFloat(e.target.value) || 1.1285;
-      render();
-    });
-
-    document.getElementById('email-cur-rate')?.addEventListener('input', (e) => {
-      state.email.currentRate = parseFloat(e.target.value) || 1.1150;
-      render();
-    });
-
-    document.getElementById('btn-sync-email-rate')?.addEventListener('click', () => {
-      const [b, q] = state.email.pair.split('/');
-      if (window.MarketData && window.MarketData.getPair) {
-        window.MarketData.getPair(b, q).then(p => {
-          if (p && p.price) {
-            state.email.currentRate = p.price;
-            if (p.prevClose) state.email.refRate = p.prevClose;
-            if (window.App && window.App.showToast) {
-              window.App.showToast(`Cours spot ${p.name} synchronisé : ${p.rate}`, 'success');
-            }
-            render();
-          }
-        });
-      }
-    });
-
-    document.querySelectorAll('.email-catalyst-check').forEach(chk => {
-      chk.addEventListener('change', (e) => {
-        const id = chk.dataset.id;
-        if (chk.checked) {
-          if (!state.email.selectedArticleIds.includes(id)) state.email.selectedArticleIds.push(id);
-        } else {
-          state.email.selectedArticleIds = state.email.selectedArticleIds.filter(x => x !== id);
-        }
-        render();
-      });
-    });
-
-    document.querySelectorAll('.email-lang-btn').forEach(btn => {
+    document.querySelectorAll('.dir-toggle-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        state.email.lang = btn.dataset.lang;
+        state.email.direction = btn.dataset.dir;
         render();
       });
     });
 
-    // Copy Email HTML (Rich clipboard for Outlook & Gmail)
-    document.getElementById('btn-copy-email-html')?.addEventListener('click', async () => {
-      const { htmlBody, plainText } = generateEmailContent();
+    document.getElementById('cfg-agenda-url')?.addEventListener('input', (e) => {
+      state.email.agendaUrl = e.target.value;
+      updateEmailPreviewOnly();
+    });
+
+    // Checkboxes and inputs for Facteurs Clés
+    document.querySelectorAll('.chk-kf').forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        const idx = parseInt(chk.dataset.idx, 10);
+        state.email.keyFactors[idx].enabled = chk.checked;
+        updateEmailPreviewOnly();
+      });
+    });
+    document.querySelectorAll('.inp-kf-title').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(inp.dataset.idx, 10);
+        state.email.keyFactors[idx].title = inp.value;
+        updateEmailPreviewOnly();
+      });
+    });
+    document.querySelectorAll('.inp-kf-url').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(inp.dataset.idx, 10);
+        state.email.keyFactors[idx].url = inp.value;
+        updateEmailPreviewOnly();
+      });
+    });
+    document.querySelectorAll('.inp-kf-desc').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(inp.dataset.idx, 10);
+        state.email.keyFactors[idx].desc = inp.value;
+        updateEmailPreviewOnly();
+      });
+    });
+
+    // Checkboxes and inputs for Événements à Venir
+    document.querySelectorAll('.chk-ue').forEach(chk => {
+      chk.addEventListener('change', (e) => {
+        const idx = parseInt(chk.dataset.idx, 10);
+        state.email.upcomingEvents[idx].enabled = chk.checked;
+        updateEmailPreviewOnly();
+      });
+    });
+    document.querySelectorAll('.inp-ue-title').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(inp.dataset.idx, 10);
+        state.email.upcomingEvents[idx].title = inp.value;
+        updateEmailPreviewOnly();
+      });
+    });
+    document.querySelectorAll('.inp-ue-url').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(inp.dataset.idx, 10);
+        state.email.upcomingEvents[idx].url = inp.value;
+        updateEmailPreviewOnly();
+      });
+    });
+    document.querySelectorAll('.inp-ue-desc').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const idx = parseInt(inp.dataset.idx, 10);
+        state.email.upcomingEvents[idx].desc = inp.value;
+        updateEmailPreviewOnly();
+      });
+    });
+
+    // Reset email button
+    document.getElementById('btn-reset-email-model')?.addEventListener('click', () => {
+      state.email = JSON.parse(JSON.stringify(DEFAULT_EMAIL_DATA));
+      render();
+      if (window.App && window.App.showToast) {
+        window.App.showToast('Modèle exact de référence rétabli !', 'info');
+      }
+    });
+
+    // Copy Email HTML (Rich clipboard for Gmail & Outlook)
+    document.getElementById('btn-copy-gmail-html')?.addEventListener('click', async () => {
+      const { htmlBody, plainText } = generateExactEmail();
       try {
         if (navigator.clipboard && window.ClipboardItem) {
           const blobHtml = new Blob([htmlBody], { type: 'text/html' });
@@ -1260,20 +1205,19 @@ ${isFr ? 'Communication factuelle - Ne constitue pas un conseil en investissemen
         } else {
           await navigator.clipboard.writeText(plainText);
         }
-        const btn = document.getElementById('btn-copy-email-html');
+        const btn = document.getElementById('btn-copy-gmail-html');
         if (btn) {
-          btn.innerHTML = '✓ Copié en HTML riche !';
+          btn.innerHTML = '✓ Copié en Format Gmail !';
           btn.style.background = '#15803d';
           setTimeout(() => {
-            btn.innerHTML = '📋 Copier pour Outlook / Gmail (HTML riche)';
+            btn.innerHTML = '📋 Copier pour Gmail / Outlook (Format Riche)';
             btn.style.background = '#1e3a8a';
           }, 2500);
         }
         if (window.App && window.App.showToast) {
-          window.App.showToast('Email prêt à coller dans Outlook ou Gmail (liens cliquables inclus) !', 'success');
+          window.App.showToast('Email prêt à coller dans Gmail ou Outlook avec liens cliquables !', 'success');
         }
       } catch (err) {
-        console.warn('HTML copy fallback:', err);
         navigator.clipboard.writeText(plainText).then(() => {
           if (window.App && window.App.showToast) {
             window.App.showToast('Email copié en texte dans le presse-papier !', 'info');
@@ -1282,20 +1226,29 @@ ${isFr ? 'Communication factuelle - Ne constitue pas un conseil en investissemen
       }
     });
 
-    // Copy Email PlainText
-    document.getElementById('btn-copy-email-text')?.addEventListener('click', () => {
-      const { plainText } = generateEmailContent();
+    // Copy Email PlainText / Markdown
+    document.getElementById('btn-copy-gmail-text')?.addEventListener('click', () => {
+      const { plainText } = generateExactEmail();
       navigator.clipboard.writeText(plainText).then(() => {
-        const btn = document.getElementById('btn-copy-email-text');
+        const btn = document.getElementById('btn-copy-gmail-text');
         if (btn) {
           btn.innerHTML = '✓ Copié !';
           setTimeout(() => { btn.innerHTML = '📝 Texte Brut'; }, 2000);
         }
         if (window.App && window.App.showToast) {
-          window.App.showToast('Version texte copiée pour Slack/WhatsApp/Email !', 'success');
+          window.App.showToast('Texte brut copié pour WhatsApp/Slack/Mail !', 'success');
         }
       });
     });
+  }
+
+  // Fast partial update to avoid losing input focus
+  function updateEmailPreviewOnly() {
+    const previewContainer = document.getElementById('email-preview-content');
+    if (previewContainer) {
+      const { htmlBody } = generateExactEmail();
+      previewContainer.innerHTML = htmlBody;
+    }
   }
 
   // ─── Public API ───
