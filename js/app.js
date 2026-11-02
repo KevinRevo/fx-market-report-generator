@@ -17,6 +17,7 @@ window.App = (() => {
   const NAV_ITEMS = [
     { id: 'dashboard', icon: '📊', label: 'Dashboard', shortLabel: 'Home' },
     { id: 'market-radar', icon: '🎯', label: 'Matrice & Radar FX', shortLabel: 'Radar' },
+    { id: 'news-feed', icon: '🌐', label: 'Veille FX & Géopolitique', shortLabel: 'Veille' },
     { id: 'daily-report', icon: '📰', label: 'Daily Report', shortLabel: 'Daily' },
     { id: 'pair-focus', icon: '💱', label: 'Pair Focus', shortLabel: 'Pairs' },
     { id: 'email-templates', icon: '✉️', label: 'Email Templates', shortLabel: 'Emails' },
@@ -159,6 +160,14 @@ window.App = (() => {
             contentArea.innerHTML = renderLoadingState('Matrice & Radar FX');
           }
           break;
+        case 'news-feed':
+          if (window.NewsFeed) {
+            contentArea.innerHTML = window.NewsFeed.renderPage();
+            window.NewsFeed.initPage?.();
+          } else {
+            contentArea.innerHTML = renderLoadingState('Veille FX & Géopolitique');
+          }
+          break;
         case 'daily-report':
           if (window.DailyReport) {
             contentArea.innerHTML = window.DailyReport.renderDailyReportPage();
@@ -231,6 +240,16 @@ window.App = (() => {
             <div class="action-info">
               <h4>Matrice & Radar FX</h4>
               <p>Heatmap en direct & alertes de seuils techniques</p>
+            </div>
+            <svg class="action-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <button class="action-card" data-action="news-feed">
+            <div class="action-icon">🌐</div>
+            <div class="action-info">
+              <h4>Veille FX & Géopolitique</h4>
+              <p>Revue de presse quotidienne (FR & EN) : Reuters, ING, Guardian...</p>
             </div>
             <svg class="action-arrow" width="20" height="20" viewBox="0 0 20 20" fill="none">
               <path d="M7 4l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
