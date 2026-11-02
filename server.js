@@ -372,6 +372,124 @@ async function fetchLiveNews(pairOrType) {
   return filtered;
 }
 
+// ─── Institutional Press Review Aggregator (FR & EN) ───
+let pressCache = { data: null, timestamp: 0 };
+
+const PRESS_FEEDS = [
+  // English Trusted Sources (reuters, ing, fxempire, theguardian, sky.com, investing, fxstreet, usnews)
+  { id: 'reuters', name: 'Reuters', lang: 'en', defCat: 'FX', url: 'https://news.google.com/rss/search?q=site:reuters.com+(forex+OR+currency+OR+dollar+OR+%22central+bank%22)+when:3d&hl=en-US&gl=US&ceid=US:en' },
+  { id: 'ing', name: 'ING Think', lang: 'en', defCat: 'Banques Centrales', url: 'https://think.ing.com/rss' },
+  { id: 'fxempire', name: 'FX Empire', lang: 'en', defCat: 'FX', url: 'https://news.google.com/rss/search?q=site:fxempire.com+(forex+OR+dollar+OR+eurusd)+when:3d&hl=en-US&gl=US&ceid=US:en' },
+  { id: 'theguardian_biz', name: 'The Guardian (Business)', lang: 'en', defCat: 'Macro', url: 'https://www.theguardian.com/business/rss' },
+  { id: 'theguardian_world', name: 'The Guardian (World)', lang: 'en', defCat: 'Géopolitique', url: 'https://www.theguardian.com/world/rss' },
+  { id: 'sky_biz', name: 'Sky News (Business)', lang: 'en', defCat: 'Macro', url: 'https://feeds.skynews.com/feeds/rss/business.xml' },
+  { id: 'sky_world', name: 'Sky News (World)', lang: 'en', defCat: 'Géopolitique', url: 'https://feeds.skynews.com/feeds/rss/world.xml' },
+  { id: 'investing_en', name: 'Investing.com', lang: 'en', defCat: 'Macro', url: 'https://www.investing.com/rss/news_1.rss' },
+  { id: 'fxstreet', name: 'FXStreet', lang: 'en', defCat: 'FX', url: 'https://www.fxstreet.com/rss/news' },
+  { id: 'usnews', name: 'US News', lang: 'en', defCat: 'Macro', url: 'https://www.usnews.com/rss/money' },
+
+  // French Trusted Sources (les echos, le monde, le figaro, investing fr, bfm)
+  { id: 'lesechos', name: 'Les Echos', lang: 'fr', defCat: 'FX', url: 'https://news.google.com/rss/search?q=site:lesechos.fr+(devises+OR+dollar+OR+euro+OR+bce+OR+geopolitique)+when:3d&hl=fr&gl=FR&ceid=FR:fr' },
+  { id: 'lemonde_eco', name: 'Le Monde (Éco)', lang: 'fr', defCat: 'Macro', url: 'https://www.lemonde.fr/economie/rss_full.xml' },
+  { id: 'lemonde_inter', name: 'Le Monde (International)', lang: 'fr', defCat: 'Géopolitique', url: 'https://www.lemonde.fr/international/rss_full.xml' },
+  { id: 'lefigaro_eco', name: 'Le Figaro Économie', lang: 'fr', defCat: 'Macro', url: 'https://www.lefigaro.fr/rss/figaro_economie.xml' },
+  { id: 'investing_fr', name: 'Investing.com (FR)', lang: 'fr', defCat: 'Macro', url: 'https://fr.investing.com/rss/news_1.rss' },
+  { id: 'bfm_bourse', name: 'BFM Business', lang: 'fr', defCat: 'Macro', url: 'https://news.google.com/rss/search?q=site:bfmtv.com/economie+(bourse+OR+devises+OR+taux+OR+petrole)+when:3d&hl=fr&gl=FR&ceid=FR:fr' }
+];
+
+function cleanHtml(str) {
+  if (!str) return '';
+  return str.replace(/<[^>]*>/g, ' ')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/\s+/g, ' ')
+            .trim();
+}
+
+function detectCategory(title, desc, defCat) {
+  const text = (title + ' ' + (desc || '')).toLowerCase();
+  if (/oil|pétrole|petrole|brent|wti|crude|opec|opep|gaz|gas|hormuz/.test(text)) return 'Énergie & Pétrole';
+  if (/fed\b|bce\b|ecb\b|powell|lagarde|taux directeurs?|interest rates?|fomc|bns|snb|boe|bank of england|nbp|rate hike|rate cut|monetary policy|politique monétaire/.test(text)) return 'Banques Centrales';
+  if (/war|guerre|tensions?|iran|israel|moyen-orient|ukraine|russie|russia|china|chine|taiwan|sanctions?|trump|conflit|otan|nato|red sea|mer rouge|houthi|geopolitic|géopolitique/.test(text)) return 'Géopolitique';
+  if (/dollar|euro|forex|devises?|taux de change|dxy|pound|yen|franc suisse|zloty|forint|koruna|\bfx\b|gbp|chf|jpy|eur\/usd|currencies/.test(text)) return 'FX & Devises';
+  return defCat || 'Macroéconomie';
+}
+
+async function fetchPressReview() {
+  const now = Date.now();
+  if (pressCache.data && (now - pressCache.timestamp < 15 * 60 * 1000)) {
+    return pressCache.data;
+  }
+
+  const articles = [];
+  const seenTitles = new Set();
+
+  await Promise.allSettled(PRESS_FEEDS.map(async (feed) => {
+    try {
+      const res = await fetch(feed.url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(4500)
+      });
+      if (!res.ok) return;
+
+      const xml = await res.text();
+      const grab = (item, tag) => {
+        const m = item.match(new RegExp('<' + tag + '>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/' + tag + '>'));
+        return m ? m[1].trim() : '';
+      };
+
+      const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
+      items.slice(0, 15).forEach(it => {
+        let title = cleanHtml(grab(it, 'title'));
+        let link = grab(it, 'link');
+        let desc = cleanHtml(grab(it, 'description'));
+        let pubDateStr = grab(it, 'pubDate');
+
+        if (!title || title.length < 10) return;
+
+        // Clean trailing Google News source suffix like " - Reuters"
+        if (title.endsWith(' - Reuters')) title = title.replace(/ - Reuters$/, '');
+        if (title.endsWith(' - Les Échos')) title = title.replace(/ - Les Échos$/, '');
+        if (title.endsWith(' - FX Empire')) title = title.replace(/ - FX Empire$/, '');
+        if (title.endsWith(' - BFM Bourse')) title = title.replace(/ - BFM Bourse$/, '');
+
+        const normTitle = title.toLowerCase().slice(0, 50);
+        if (seenTitles.has(normTitle)) return;
+        seenTitles.add(normTitle);
+
+        const d = pubDateStr ? new Date(pubDateStr) : new Date();
+        const pubTime = isNaN(d.getTime()) ? now : d.getTime();
+
+        articles.push({
+          id: feed.id + '-' + pubTime + '-' + Math.random().toString(36).substr(2, 6),
+          title,
+          summary: desc ? (desc.length > 160 ? desc.slice(0, 157) + '...' : desc) : '',
+          link,
+          publisher: feed.name,
+          sourceId: feed.id,
+          lang: feed.lang,
+          category: detectCategory(title, desc, feed.defCat),
+          pubTime,
+          dateStr: parisDateStr(pubTime),
+          timeAgo: timeAgo(d)
+        });
+      });
+    } catch (e) {
+      console.warn(`Press feed error (${feed.name}):`, e.message);
+    }
+  }));
+
+  // Sort newest first
+  articles.sort((a, b) => b.pubTime - a.pubTime);
+
+  pressCache = { data: articles, timestamp: now };
+  return articles;
+}
+
 const server = http.createServer(async (req, res) => {
   const urlObj = new URL(req.url, `http://${req.headers.host}`);
   const pathname = urlObj.pathname;
@@ -430,6 +548,49 @@ const server = http.createServer(async (req, res) => {
         'Access-Control-Allow-Origin': '*'
       });
       res.end(JSON.stringify({ success: true, articles, timestamp: new Date().toISOString() }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: e.message }));
+    }
+    return;
+  }
+
+  // API Route: Institutional Press Review (FR & EN from Reuters, ING, FX Empire, Guardian, Sky, Investing, FXStreet, US News, etc.)
+  if (pathname === '/api/press-review') {
+    try {
+      let articles = await fetchPressReview();
+      const lang = urlObj.searchParams.get('lang'); // 'fr' | 'en' | 'all'
+      const category = urlObj.searchParams.get('category'); // 'FX & Devises' | etc.
+      const source = urlObj.searchParams.get('source');
+      const q = (urlObj.searchParams.get('q') || '').toLowerCase().trim();
+
+      if (lang && lang !== 'all') {
+        articles = articles.filter(a => a.lang === lang);
+      }
+      if (category && category !== 'all' && category !== 'Tous') {
+        articles = articles.filter(a => a.category.toLowerCase().includes(category.toLowerCase()));
+      }
+      if (source && source !== 'all') {
+        articles = articles.filter(a => a.publisher.toLowerCase().includes(source.toLowerCase()) || a.sourceId === source);
+      }
+      if (q) {
+        articles = articles.filter(a => a.title.toLowerCase().includes(q) || (a.summary && a.summary.toLowerCase().includes(q)));
+      }
+
+      const frCount = articles.filter(a => a.lang === 'fr').length;
+      const enCount = articles.filter(a => a.lang === 'en').length;
+
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(JSON.stringify({
+        success: true,
+        total: articles.length,
+        stats: { fr: frCount, en: enCount },
+        articles,
+        timestamp: new Date().toISOString()
+      }));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: false, error: e.message }));
