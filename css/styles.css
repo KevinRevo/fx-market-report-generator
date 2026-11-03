@@ -1797,6 +1797,11 @@ textarea.form-control {
   border-color: #4ade80 !important;
 }
 
+.email-lang-btn:hover {
+  filter: brightness(0.95);
+  transform: translateY(-1px);
+}
+
 .subtab-btn:hover {
   filter: brightness(0.96);
 }
