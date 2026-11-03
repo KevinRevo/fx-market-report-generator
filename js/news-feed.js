@@ -12,7 +12,8 @@
  * 4. Dual language support (French & English) with split-screen side-by-side view.
  * 5. Direct "➕ Insérer dans l'Email" feature to immediately inject articles into commercial emails.
  * 6. Dynamic daily refreshing: Clicking "Actualiser" recalculates today's date and refreshes the day's feed.
- * 7. Commercial Email Template matching the exact user screenshot with automatic pair adaptability.
+ * 7. Commercial Email Template matching the exact user screenshot with instant French / English toggle.
+ *    In English, currency hedging is explicitly designated as "FX Forwards".
  */
 
 window.NewsFeed = (() => {
@@ -69,9 +70,6 @@ window.NewsFeed = (() => {
   }
 
   // ─── Curated Verified Article Catalogue across All Pairs ───
-  // Each article is classified as either:
-  // - type: 'today' (fresh breaking dispatch rolled to current day)
-  // - type: 'key_dossier' (preserved foundational context explaining structural moves)
   const CURATED_FEED_MASTER = [
     // ═══════════════ EUR/USD ARTICLES ═══════════════
     {
@@ -438,201 +436,485 @@ window.NewsFeed = (() => {
     }
   ];
 
-  // ─── Pair-Specific Tailored Email Presets ───
+  // ─── Pair-Specific Tailored Email Presets (FR & EN with FX Forwards branding) ───
   const PAIR_EMAIL_PRESETS = {
     'EUR/USD': {
-      period: "la fin du mois d'août",
-      movePct: '4.05 %',
-      direction: 'défaveur',
-      keyFactors: [
-        {
-          id: 'kf-eurusd-1',
-          title: 'Agitations et risques budgétaires en Europe',
-          url: 'https://www.theguardian.com/business/live/2026/oct/19/exports-lift-china-economic-growth-french-protests-pressure-euro-bonds-latest-business-live-updates',
-          desc: 'De violentes manifestations en France et en Italie incluant des couvre-feux et des dégradations sur des infrastructures historiques ont provoqué des ventes massives sur les actions et les obligations, ravivant les craintes sur la stabilité de la dette souveraine européenne.',
-          enabled: true
-        },
-        {
-          id: 'kf-eurusd-2',
-          title: 'Incertitude politique aux États-Unis',
-          url: 'https://news.sky.com/story/trumps-approval-rating-hits-new-record-low-as-us-midterms-loom-13601177',
-          desc: 'La côte de popularité de Trump atteint un nouveau plus bas historique à l\'approche des élections américaines de mi-mandat.',
-          enabled: true
-        }
-      ],
-      upcomingEvents: [
-        {
-          id: 'ue-eurusd-1',
-          title: 'Décision de la Fed sur les taux (28/10)',
-          url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
-          desc: 'Un catalyseur direct potentiel de la hausse du dollar et de la volatilité à court terme.',
-          enabled: true
-        },
-        {
-          id: 'ue-eurusd-2',
-          title: 'Décision de la BCE sur les taux (29/10)',
-          url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
-          desc: 'Tous les regards sont tournés vers Christine Lagarde, car toute réorientation politique ou déclaration inattendue fera bouger les marchés.',
-          enabled: true
-        },
-        {
-          id: 'ue-eurusd-3',
-          title: 'Élections américaines de mi-mandat (03/11)',
-          url: 'https://www.usnews.com/news/world/articles/2026-10-20/explainer-three-issues-defining-the-2026-us-midterm-elections',
-          desc: 'Les évolutions politiques représentent un risque majeur sur la paire EUR/USD',
-          enabled: true
-        }
-      ]
+      fr: {
+        period: "la fin du mois d'août",
+        movePct: '4.05 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-eurusd-1',
+            title: 'Agitations et risques budgétaires en Europe',
+            url: 'https://www.theguardian.com/business/live/2026/oct/19/exports-lift-china-economic-growth-french-protests-pressure-euro-bonds-latest-business-live-updates',
+            desc: 'De violentes manifestations en France et en Italie incluant des couvre-feux et des dégradations sur des infrastructures historiques ont provoqué des ventes massives sur les actions et les obligations, ravivant les craintes sur la stabilité de la dette souveraine européenne.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurusd-2',
+            title: 'Incertitude politique aux États-Unis',
+            url: 'https://news.sky.com/story/trumps-approval-rating-hits-new-record-low-as-us-midterms-loom-13601177',
+            desc: 'La côte de popularité de Trump atteint un nouveau plus bas historique à l\'approche des élections américaines de mi-mandat.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-eurusd-1',
+            title: 'Décision de la Fed sur les taux (28/10)',
+            url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
+            desc: 'Un catalyseur direct potentiel de la hausse du dollar et de la volatilité à court terme.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-2',
+            title: 'Décision de la BCE sur les taux (29/10)',
+            url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
+            desc: 'Tous les regards sont tournés vers Christine Lagarde, car toute réorientation politique ou déclaration inattendue fera bouger les marchés.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-3',
+            title: 'Élections américaines de mi-mandat (03/11)',
+            url: 'https://www.usnews.com/news/world/articles/2026-10-20/explainer-three-issues-defining-the-2026-us-midterm-elections',
+            desc: 'Les évolutions politiques représentent un risque majeur sur la paire EUR/USD',
+            enabled: true
+          }
+        ]
+      },
+      en: {
+        period: 'the end of August',
+        movePct: '4.05 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-eurusd-en-1',
+            title: 'European budget turmoil and sovereign debt concerns',
+            url: 'https://www.theguardian.com/business/live/2026/oct/19/exports-lift-china-economic-growth-french-protests-pressure-euro-bonds-latest-business-live-updates',
+            desc: 'Violent protests in France and Italy including curfews and disruptions to historic infrastructure triggered sell-offs in European equities and government bonds, reviving concerns over sovereign debt stability.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurusd-en-2',
+            title: 'US Political Uncertainty',
+            url: 'https://news.sky.com/story/trumps-approval-rating-hits-new-record-low-as-us-midterms-loom-13601177',
+            desc: 'Trump\'s approval ratings hit a new record low ahead of the upcoming US midterm elections, adding to policy risk premiums.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-eurusd-en-1',
+            title: 'Fed Interest Rate Decision (28/10)',
+            url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
+            desc: 'A potential direct catalyst for US dollar strength and near-term market volatility.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-en-2',
+            title: 'ECB Interest Rate Decision (29/10)',
+            url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
+            desc: 'All eyes are on Christine Lagarde, as any monetary policy shift or unexpected rhetoric will move markets.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-en-3',
+            title: 'US Midterm Elections (03/11)',
+            url: 'https://www.usnews.com/news/world/articles/2026-10-20/explainer-three-issues-defining-the-2026-us-midterm-elections',
+            desc: 'Major political and trade developments posing significant volatility risks for the EUR/USD pair.',
+            enabled: true
+          }
+        ]
+      }
     },
     'EUR/CHF': {
-      period: "le début de l'automne",
-      movePct: '2.15 %',
-      direction: 'défaveur',
-      keyFactors: [
-        {
-          id: 'kf-eurchf-1',
-          title: 'Statut de valeur refuge du franc suisse et tensions budgétaires européennes',
-          url: 'https://www.reuters.com/markets/currencies/',
-          desc: 'Le franc suisse reste particulièrement recherché par les investisseurs internationaux face à l\'instabilité politique et aux déficits croissants en Europe.',
-          enabled: true
-        },
-        {
-          id: 'kf-eurchf-2',
-          title: 'Inflation suisse proche de 0 % et différentiel de taux de 250 pb avec la BCE',
-          url: 'https://think.ing.com/',
-          desc: 'Bien que le taux directeur de la BNS soit fixé à 0 %, le différentiel de rendement ne parvient pas à affaiblir durablement la devise helvétique.',
-          enabled: true
-        }
-      ],
-      upcomingEvents: [
-        {
-          id: 'ue-eurchf-1',
-          title: 'Communication trimestrielle de la BNS sur ses réserves de change',
-          url: 'https://www.reuters.com/markets/currencies/',
-          desc: 'Surveillance étroite d\'éventuelles interventions directes sur le marché des changes pour freiner l\'appréciation du CHF.',
-          enabled: true
-        },
-        {
-          id: 'ue-eurchf-2',
-          title: 'Décision de politique monétaire de la BCE et discours de Lagarde',
-          url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
-          desc: 'Tout assouplissement monétaire européen non accompagné par la BNS accentuera la pression vendeuse sur l\'EUR/CHF.',
-          enabled: true
-        }
-      ]
+      fr: {
+        period: "le début de l'automne",
+        movePct: '2.15 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-eurchf-1',
+            title: 'Statut de valeur refuge du franc suisse et tensions budgétaires européennes',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Le franc suisse reste particulièrement recherché par les investisseurs internationaux face à l\'instabilité politique et aux déficits croissants en Europe.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurchf-2',
+            title: 'Inflation suisse proche de 0 % et différentiel de taux de 250 pb avec la BCE',
+            url: 'https://think.ing.com/',
+            desc: 'Bien que le taux directeur de la BNS soit fixé à 0 %, le différentiel de rendement ne parvient pas à affaiblir durablement la devise helvétique.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-eurchf-1',
+            title: 'Communication trimestrielle de la BNS sur ses réserves de change',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Surveillance étroite d\'éventuelles interventions directes sur le marché des changes pour freiner l\'appréciation du CHF.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurchf-2',
+            title: 'Décision de politique monétaire de la BCE et discours de Lagarde',
+            url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
+            desc: 'Tout assouplissement monétaire européen non accompagné par la BNS accentuera la pression vendeuse sur l\'EUR/CHF.',
+            enabled: true
+          }
+        ]
+      },
+      en: {
+        period: 'early autumn',
+        movePct: '2.15 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-eurchf-en-1',
+            title: 'Swiss Franc Safe-Haven Status and European Fiscal Strain',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'The Swiss franc remains in strong demand among global treasuries facing fiscal deficit strains across European economies.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurchf-en-2',
+            title: 'Swiss Inflation near 0% and 250 bps Rate Spread with the ECB',
+            url: 'https://think.ing.com/',
+            desc: 'Despite the SNB policy rate anchored at 0.00%, the wide rate differential fails to soften the franc in risk-off regimes.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-eurchf-en-1',
+            title: 'SNB Quarterly Assessment & FX Reserves Communication',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Close monitoring of potential direct foreign exchange interventions to prevent excessive franc appreciation.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurchf-en-2',
+            title: 'ECB Monetary Policy Decision & Christine Lagarde Speech',
+            url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
+            desc: 'Any further ECB monetary easing without SNB response maintains downward pressure on EUR/CHF.',
+            enabled: true
+          }
+        ]
+      }
     },
     'EUR/PLN': {
-      period: "le début du mois de septembre",
-      movePct: '1.80 %',
-      direction: 'faveur',
-      keyFactors: [
-        {
-          id: 'kf-eurpln-1',
-          title: 'Pause monétaire de la NBP à 5,75 % et attractivité du carry trade',
-          url: 'https://www.fxstreet.com/news',
-          desc: 'Le gouverneur Adam Glapiński maintient les taux directeurs polonais à un niveau élevé, conférant au zloty une prime de portage solide.',
-          enabled: true
-        },
-        {
-          id: 'kf-eurpln-2',
-          title: 'Déblocage des fonds de relance européens et consommation robuste',
-          url: 'https://think.ing.com/',
-          desc: 'Les flux d\'investissements européens et la consommation des ménages amortissent l\'impact du ralentissement industriel allemand.',
-          enabled: true
-        }
-      ],
-      upcomingEvents: [
-        {
-          id: 'ue-eurpln-1',
-          title: 'Décision du Conseil de politique monétaire polonais (RPP)',
-          url: 'https://www.reuters.com/markets/currencies/',
-          desc: 'Évaluation des tensions salariales et de la trajectoire d\'inflation pour la fin d\'année en Pologne.',
-          enabled: true
-        },
-        {
-          id: 'ue-eurpln-2',
-          title: 'Publication des chiffres de croissance du PIB en zone euro',
-          url: 'https://www.theguardian.com/business',
-          desc: 'Un fléchissement marqué de la demande européenne pourrait peser sur les exportateurs polonais et réorienter l\'EUR/PLN.',
-          enabled: true
-        }
-      ]
+      fr: {
+        period: "le début du mois de septembre",
+        movePct: '1.80 %',
+        direction: 'faveur',
+        keyFactors: [
+          {
+            id: 'kf-eurpln-1',
+            title: 'Pause monétaire de la NBP à 5,75 % et attractivité du carry trade',
+            url: 'https://www.fxstreet.com/news',
+            desc: 'Le gouverneur Adam Glapiński maintient les taux directeurs polonais à un niveau élevé, conférant au zloty une prime de portage solide.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurpln-2',
+            title: 'Déblocage des fonds de relance européens et consommation robuste',
+            url: 'https://think.ing.com/',
+            desc: 'Les flux d\'investissements européens et la consommation des ménages amortissent l\'impact du ralentissement industriel allemand.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-eurpln-1',
+            title: 'Décision du Conseil de politique monétaire polonais (RPP)',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Évaluation des tensions salariales et de la trajectoire d\'inflation pour la fin d\'année en Pologne.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurpln-2',
+            title: 'Publication des chiffres de croissance du PIB en zone euro',
+            url: 'https://www.theguardian.com/business',
+            desc: 'Un fléchissement marqué de la demande européenne pourrait peser sur les exportateurs polonais et réorienter l\'EUR/PLN.',
+            enabled: true
+          }
+        ]
+      },
+      en: {
+        period: 'early September',
+        movePct: '1.80 %',
+        direction: 'faveur',
+        keyFactors: [
+          {
+            id: 'kf-eurpln-en-1',
+            title: 'NBP Monetary Pause at 5.75% and Solid Carry Buffer',
+            url: 'https://www.fxstreet.com/news',
+            desc: 'Governor Adam Glapiński maintains high real policy rates, ensuring an attractive carry trade advantage for the Polish zloty.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurpln-en-2',
+            title: 'EU Recovery Fund Inflows and Strong Domestic Demand',
+            url: 'https://think.ing.com/',
+            desc: 'Disbursement of EU cohesion funds and resilient consumer spending help decouple Poland from broader euro-area industrial weakness.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-eurpln-en-1',
+            title: 'Polish Monetary Policy Council (RPP) Rate Decision',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Key assessment of wage growth pressures and core inflation trajectory into year-end.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurpln-en-2',
+            title: 'Eurozone GDP Flash Estimates & Industrial Production',
+            url: 'https://www.theguardian.com/business',
+            desc: 'A deeper slowdown in German demand could impact Polish exporters and reverse EUR/PLN momentum.',
+            enabled: true
+          }
+        ]
+      }
     },
     'USD/HUF': {
-      period: "la fin de l'été",
-      movePct: '3.40 %',
-      direction: 'défaveur',
-      keyFactors: [
-        {
-          id: 'kf-usdhuf-1',
-          title: 'Taux directeur MNB à 5,50 % et négociations budgétaires à Budapest',
-          url: 'https://www.reuters.com/markets/currencies/',
-          desc: 'La banque centrale hongroise marque une pause pour défendre le forint, très sensible aux sorties de capitaux et aux tensions avec Bruxelles.',
-          enabled: true
-        },
-        {
-          id: 'kf-usdhuf-2',
-          title: 'Facture énergétique et vulnérabilité du compte courant hongrois',
-          url: 'https://think.ing.com/',
-          desc: 'La dépendance aux importations de pétrole et de gaz accroît la sensibilité du forint face aux mouvements du dollar américain.',
-          enabled: true
-        }
-      ],
-      upcomingEvents: [
-        {
-          id: 'ue-usdhuf-1',
-          title: 'Réunion de politique monétaire de la Banque Nationale de Hongrie (MNB)',
-          url: 'https://www.reuters.com/markets/currencies/',
-          desc: 'Toute déclaration accommodante prématurée risque de déclencher un décrochage du forint face au dollar.',
-          enabled: true
-        },
-        {
-          id: 'ue-usdhuf-2',
-          title: 'Décision du FOMC américain et conférence de Jerome Powell',
-          url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
-          desc: 'La résilience des rendements obligataires américains pénalise les devises émergentes d\'Europe centrale.',
-          enabled: true
-        }
-      ]
+      fr: {
+        period: "la fin de l'été",
+        movePct: '3.40 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-usdhuf-1',
+            title: 'Taux directeur MNB à 5,50 % et négociations budgétaires à Budapest',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'La banque centrale hongroise marque une pause pour défendre le forint, très sensible aux sorties de capitaux et aux tensions avec Bruxelles.',
+            enabled: true
+          },
+          {
+            id: 'kf-usdhuf-2',
+            title: 'Facture énergétique et vulnérabilité du compte courant hongrois',
+            url: 'https://think.ing.com/',
+            desc: 'La dépendance aux importations de pétrole et de gaz accroît la sensibilité du forint face aux mouvements du dollar américain.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-usdhuf-1',
+            title: 'Réunion de politique monétaire de la Banque Nationale de Hongrie (MNB)',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Toute déclaration accommodante prématurée risque de déclencher un décrochage du forint face au dollar.',
+            enabled: true
+          },
+          {
+            id: 'ue-usdhuf-2',
+            title: 'Décision du FOMC américain et conférence de Jerome Powell',
+            url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
+            desc: 'La résilience des rendements obligataires américains pénalise les devises émergentes d\'Europe centrale.',
+            enabled: true
+          }
+        ]
+      },
+      en: {
+        period: 'late summer',
+        movePct: '3.40 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-usdhuf-en-1',
+            title: 'MNB Base Rate at 5.50% and Budapest Fiscal Negotiations',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'The National Bank of Hungary pauses rate cuts to protect the forint amid persistent fiscal deficit scrutiny and EU funding talks.',
+            enabled: true
+          },
+          {
+            id: 'kf-usdhuf-en-2',
+            title: 'Energy Import Exposure and HUF Carry Sensitivity',
+            url: 'https://think.ing.com/',
+            desc: 'High winter energy dependency makes the Hungarian forint particularly vulnerable to US dollar strength.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-usdhuf-en-1',
+            title: 'National Bank of Hungary (MNB) Policy Meeting',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Any dovish surprise would risk triggering a sharp sell-off in the forint against the dollar.',
+            enabled: true
+          },
+          {
+            id: 'ue-usdhuf-en-2',
+            title: 'US FOMC Interest Rate Decision & Jerome Powell Speech',
+            url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
+            desc: 'Elevated US Treasury yields continue to exert pressure on emerging market currencies.',
+            enabled: true
+          }
+        ]
+      }
     },
     'CZK/USD': {
-      period: "le milieu de l'été",
-      movePct: '2.60 %',
-      direction: 'défaveur',
-      keyFactors: [
-        {
-          id: 'kf-czkusd-1',
-          title: 'Fin du cycle de baisse des taux par la CNB (Banque Nationale Tchèque) à 3,75 %',
-          url: 'https://www.fxempire.com/markets/currencies',
-          desc: 'La CNB stabilise ses taux réels en territoire restrictif pour consolider la couronne face aux incertitudes mondiales.',
-          enabled: true
-        },
-        {
-          id: 'kf-czkusd-2',
-          title: 'Excédent de la balance commerciale tchèque et normalisation automobile',
-          url: 'https://think.ing.com/',
-          desc: 'Le redressement des chaînes d\'approvisionnement soutient la production industrielle à Prague et amortit le choc dollar.',
-          enabled: true
-        }
-      ],
-      upcomingEvents: [
-        {
-          id: 'ue-czkusd-1',
-          title: 'Conférence de presse de politique monétaire de la CNB',
-          url: 'https://www.reuters.com/markets/currencies/',
-          desc: 'Orientation des gouverneurs tchèques sur la gestion active de la stabilité du taux de change.',
-          enabled: true
-        },
-        {
-          id: 'ue-czkusd-2',
-          title: 'Statistiques sur l\'emploi américain (NFP) et salaires horaires',
-          url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
-          desc: 'Un marché du travail US résilient renforce l\'attrait des obligations américaines au détriment de la couronne.',
-          enabled: true
-        }
-      ]
+      fr: {
+        period: "le milieu de l'été",
+        movePct: '2.60 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-czkusd-1',
+            title: 'Fin du cycle de baisse des taux par la CNB (Banque Nationale Tchèque) à 3,75 %',
+            url: 'https://www.fxempire.com/markets/currencies',
+            desc: 'La CNB stabilise ses taux réels en territoire restrictif pour consolider la couronne face aux incertitudes mondiales.',
+            enabled: true
+          },
+          {
+            id: 'kf-czkusd-2',
+            title: 'Excédent de la balance commerciale tchèque et normalisation automobile',
+            url: 'https://think.ing.com/',
+            desc: 'Le redressement des chaînes d\'approvisionnement soutient la production industrielle à Prague et amortit le choc dollar.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-czkusd-1',
+            title: 'Conférence de presse de politique monétaire de la CNB',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Orientation des gouverneurs tchèques sur la gestion active de la stabilité du taux de change.',
+            enabled: true
+          },
+          {
+            id: 'ue-czkusd-2',
+            title: 'Statistiques sur l\'emploi américain (NFP) et salaires horaires',
+            url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
+            desc: 'Un marché du travail US résilient renforce l\'attrait des obligations américaines au détriment de la couronne.',
+            enabled: true
+          }
+        ]
+      },
+      en: {
+        period: 'mid-summer',
+        movePct: '2.60 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-czkusd-en-1',
+            title: 'CNB Concludes Rate Cut Cycle at 3.75%',
+            url: 'https://www.fxempire.com/markets/currencies',
+            desc: 'The Czech National Bank keeps real policy rates in restrictive territory to protect the koruna against global volatility.',
+            enabled: true
+          },
+          {
+            id: 'kf-czkusd-en-2',
+            title: 'Czech Trade Surplus and Automotive Export Recovery',
+            url: 'https://think.ing.com/',
+            desc: 'Supply chain normalization and trade balance surplus support the koruna against dollar headwinds.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-czkusd-en-1',
+            title: 'CNB Monetary Policy Meeting & Economic Forecast',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Board forward guidance regarding active exchange rate stabilization.',
+            enabled: true
+          },
+          {
+            id: 'ue-czkusd-en-2',
+            title: 'US Non-Farm Payrolls & Hourly Earnings Report',
+            url: 'https://www.investing.com/analysis/us-dollar-slides-as-fed-rate-hike-bets-fade-despite-hot-inflation-200689735',
+            desc: 'Resilient US employment numbers would boost the dollar against Central European currencies.',
+            enabled: true
+          }
+        ]
+      }
+    },
+    'EUR/GBP': {
+      fr: {
+        period: "le début de l'automne",
+        movePct: '1.45 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-eurgbp-1',
+            title: 'Prudence de la Banque d\'Angleterre et persistance de l\'inflation des services',
+            url: 'https://news.sky.com/business',
+            desc: 'La BoE maintient des taux directeurs plus élevés que la BCE, conférant à la livre sterling un avantage de portage face à l\'euro.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurgbp-2',
+            title: 'Présentation du budget britannique et surveillance des rendements des Gilts',
+            url: 'https://www.theguardian.com/business',
+            desc: 'Les arbitrages budgétaires à Londres et les émissions obligataires dictent les flux institutionnels sur la livre.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-eurgbp-1',
+            title: 'Décision du Comité de Politique Monétaire (MPC) de la Bank of England',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Andrew Bailey précisera le rythme de baisse des taux britanniques face à la politique de la BCE.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurgbp-2',
+            title: 'Publication de l\'inflation CPI au Royaume-Uni',
+            url: 'https://www.investing.com/economic-calendar/',
+            desc: 'Un chiffre supérieur aux attentes confortera la fermeté de la livre face à la monnaie unique.',
+            enabled: true
+          }
+        ]
+      },
+      en: {
+        period: 'early autumn',
+        movePct: '1.45 %',
+        direction: 'défaveur',
+        keyFactors: [
+          {
+            id: 'kf-eurgbp-en-1',
+            title: 'Bank of England Caution and Persistent UK Services Inflation',
+            url: 'https://news.sky.com/business',
+            desc: 'The BoE maintains interest rates higher than the ECB, providing Sterling with a favorable carry advantage against the Euro.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurgbp-en-2',
+            title: 'UK Autumn Budget and Gilt Market Dynamics',
+            url: 'https://www.theguardian.com/business',
+            desc: 'Fiscal policy decisions in London and government bond issuance patterns steer institutional flows on the Pound.',
+            enabled: true
+          }
+        ],
+        upcomingEvents: [
+          {
+            id: 'ue-eurgbp-en-1',
+            title: 'Bank of England MPC Rate Decision & Minutes',
+            url: 'https://www.reuters.com/markets/currencies/',
+            desc: 'Governor Andrew Bailey provides forward guidance on interest rate trajectory relative to the ECB.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurgbp-en-2',
+            title: 'UK CPI Inflation Release',
+            url: 'https://www.investing.com/economic-calendar/',
+            desc: 'Higher-than-expected inflation would solidify Sterling strength against the single currency.',
+            enabled: true
+          }
+        ]
+      }
     }
   };
+
+  // Helper to retrieve preset for a pair and language
+  function getPairPreset(pair, lang) {
+    const pairConfig = PAIR_EMAIL_PRESETS[pair] || PAIR_EMAIL_PRESETS['EUR/USD'];
+    return pairConfig[lang] || pairConfig['fr'];
+  }
 
   // ─── State Management ───
   let state = {
@@ -650,16 +932,17 @@ window.NewsFeed = (() => {
     activeSource: 'all',
     searchQuery: '',
     
-    // Commercial Email State
+    // Commercial Email State (with language support: 'fr' or 'en')
     email: {
+      lang: 'fr', // 'fr' | 'en'
       clientName: 'XXXX',
       pair: 'EUR/USD',
       period: "la fin du mois d'août",
       movePct: '4.05 %',
-      direction: 'défaveur',
+      direction: 'défaveur', // 'défaveur' | 'faveur'
       agendaUrl: 'https://calendar.app.google/18zB9wv3EnRyxmQBA',
-      keyFactors: JSON.parse(JSON.stringify(PAIR_EMAIL_PRESETS['EUR/USD'].keyFactors)),
-      upcomingEvents: JSON.parse(JSON.stringify(PAIR_EMAIL_PRESETS['EUR/USD'].upcomingEvents))
+      keyFactors: JSON.parse(JSON.stringify(PAIR_EMAIL_PRESETS['EUR/USD'].fr.keyFactors)),
+      upcomingEvents: JSON.parse(JSON.stringify(PAIR_EMAIL_PRESETS['EUR/USD'].fr.upcomingEvents))
     }
   };
 
@@ -702,7 +985,6 @@ window.NewsFeed = (() => {
         const url = `/api/press-review?refresh=${force ? 'true' : 'false'}&t=${Date.now()}`;
         res = await fetch(url, { signal: AbortSignal.timeout(6500) });
       } catch (_) {
-        // Fallback to proxy or alternative endpoint if on static GitHub Pages
         try {
           res = await fetch(`https://fx-market-report-generator.vercel.app/api/press-review`, { signal: AbortSignal.timeout(5000) });
         } catch (e) {}
@@ -711,19 +993,15 @@ window.NewsFeed = (() => {
       if (res && res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.articles) && json.articles.length > 0) {
-          // Merge live RSS articles with our curated foundational dossiers
-          // This ensures that fresh daily news is at the top, while the key structural analyses (elections, budget, central banks) are preserved
           const liveArticles = json.articles.map(a => ({
             ...a,
             pairs: Array.isArray(a.pairs) && a.pairs.length > 0 ? a.pairs : ['EUR/USD'],
             type: a.isToday ? 'today' : 'key_dossier'
           }));
 
-          // Keep key curated dossiers not present in live RSS
           const liveTitles = new Set(liveArticles.map(a => a.title.toLowerCase().slice(0, 40)));
           const extraCurated = curatedToday.filter(c => !liveTitles.has(c.title.toLowerCase().slice(0, 40)));
 
-          // Combine: live fresh news first, then preserved structural dossiers
           state.articles = [...liveArticles, ...extraCurated];
           state.lastUpdated = new Date();
           
@@ -872,7 +1150,7 @@ window.NewsFeed = (() => {
           </div>
 
           <div style="display:flex; gap:6px; align-items:center;">
-            <button class="btn-insert-to-email" data-title="${encodeURIComponent(article.title)}" data-url="${encodeURIComponent(article.link)}" data-summary="${encodeURIComponent(article.impact || article.summary || article.title)}" data-pairs="${pairs.join(',')}" style="padding:4px 9px; border-radius:4px; font-size:10.5px; font-weight:700; background:#f0fdf4; border:1px solid #86efac; color:#15803d; cursor:pointer;" title="Insérer directement cet article dans le modèle d'email commercial">
+            <button class="btn-insert-to-email" data-title="${encodeURIComponent(article.title)}" data-url="${encodeURIComponent(article.link)}" data-summary="${encodeURIComponent(article.impact || article.summary || article.title)}" data-pairs="${pairs.join(',')}" data-lang="${article.lang || 'fr'}" style="padding:4px 9px; border-radius:4px; font-size:10.5px; font-weight:700; background:#f0fdf4; border:1px solid #86efac; color:#15803d; cursor:pointer;" title="Insérer directement cet article dans le modèle d'email commercial">
               ➕ Utiliser dans l'Email
             </button>
             <button class="btn-copy-news" data-link="${article.link}" data-title="${encodeURIComponent(article.title)}" style="padding:4px 8px; border-radius:4px; font-size:10.5px; font-weight:600; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; cursor:pointer;">
@@ -887,32 +1165,66 @@ window.NewsFeed = (() => {
     `;
   }
 
-  // ─── Generate Exact Commercial Email ───
+  // ─── Generate Exact Commercial Email (Bilingual FR / EN with "FX Forwards") ───
   function generateExactEmail() {
     const e = state.email;
+    const isEn = (e.lang === 'en');
     const kf = e.keyFactors.filter(x => x.enabled);
     const ue = e.upcomingEvents.filter(x => x.enabled);
 
-    const subject = `Revolut Business - Couverture de change - Suivi de Marché`;
+    // Subject lines
+    const subject = isEn 
+      ? `Revolut Business - FX Forwards - Market Update`
+      : `Revolut Business - Couverture de change - Suivi de Marché`;
+
+    // English text components
+    const greeting = isEn ? `Hello ${e.clientName},` : `Bonjour ${e.clientName},`;
+    const introWish = isEn ? `I hope you are doing well.` : `J’espère que vous allez bien.`;
+    
+    const moveDirectionText = isEn 
+      ? (e.direction === 'défaveur' ? 'against your position' : 'in your favour')
+      : (e.direction === 'défaveur' ? 'en votre défaveur' : 'en votre faveur');
+
+    const moveStatement = isEn
+      ? `Since ${e.period}, we have observed a <strong>${e.movePct}</strong> move ${moveDirectionText} on the ${e.pair} currency pair.`
+      : `Depuis ${e.period}, nous avons observé un mouvement de <strong>${e.movePct}</strong> ${moveDirectionText} sur la paire ${e.pair}.`;
+
+    const nextWeeksIntro = isEn
+      ? `Over the coming weeks, several major events are likely to directly impact the exchange rate. Please find more details below:`
+      : `Au cours des prochaines semaines, plusieurs événements majeurs sont susceptibles d'impacter directement le taux de change. Vous trouverez plus de détails ci-dessous :`;
+
+    const section1Title = isEn ? `Key Drivers` : `Facteurs clés`;
+    const section2Title = isEn ? `Upcoming Events` : `Événements à venir`;
+
+    // Explicitly using "FX Forwards" in English as requested
+    const closingStatement = isEn
+      ? `I remain at your disposal should you wish to discuss this or look into setting up an FX Forwards line.`
+      : `Je reste à votre disposition si vous souhaitez en discuter ou si vous souhaitez reprendre une ligne de couverture de change.`;
+
+    const calendarBooking = isEn
+      ? `Feel free to select a time slot that suits you best <a href="${e.agendaUrl}" target="_blank" rel="noopener noreferrer" style="color: #1a73e8; text-decoration: none; font-weight: 500;">directly in my calendar</a>.`
+      : `N'hésitez pas à sélectionner le créneau qui vous convient le mieux <a href="${e.agendaUrl}" target="_blank" rel="noopener noreferrer" style="color: #1a73e8; text-decoration: none; font-weight: 500;">directement dans mon agenda</a>.`;
+
+    const signoff = isEn ? `Kind regards,` : `Bien cordialement,`;
 
     // Exact Clean HTML formatted for Gmail & Outlook
     const htmlBody = `
 <div style="font-family: Arial, Helvetica, sans-serif; font-size: 13.5px; line-height: 1.55; color: #111827; max-width: 680px; margin: 0 auto; background: #ffffff;">
   
-  <p style="margin: 0 0 14px 0;">Bonjour ${e.clientName},</p>
+  <p style="margin: 0 0 14px 0;">${greeting}</p>
   
-  <p style="margin: 0 0 14px 0;">J’espère que vous allez bien.</p>
+  <p style="margin: 0 0 14px 0;">${introWish}</p>
   
   <p style="margin: 0 0 14px 0;">
-    Depuis ${e.period}, nous avons observé un mouvement de <strong>${e.movePct}</strong> en votre ${e.direction} sur la paire ${e.pair}.
+    ${moveStatement}
   </p>
   
   <p style="margin: 0 0 14px 0;">
-    Au cours des prochaines semaines, plusieurs événements majeurs sont susceptibles d'impacter directement le taux de change. Vous trouverez plus de détails ci-dessous :
+    ${nextWeeksIntro}
   </p>
   
   <p style="margin: 18px 0 8px 0; font-weight: bold; font-size: 13.5px; color: #111827;">
-    Facteurs clés
+    ${section1Title}
   </p>
   
   <ul style="margin: 0 0 16px 0; padding-left: 20px; line-height: 1.55;">
@@ -926,7 +1238,7 @@ window.NewsFeed = (() => {
   </ul>
   
   <p style="margin: 18px 0 8px 0; font-weight: bold; font-size: 13.5px; color: #111827;">
-    Événements à venir
+    ${section2Title}
   </p>
   
   <ul style="margin: 0 0 18px 0; padding-left: 20px; line-height: 1.55;">
@@ -940,47 +1252,56 @@ window.NewsFeed = (() => {
   </ul>
   
   <p style="margin: 0 0 14px 0;">
-    Je reste à votre disposition si vous souhaitez en discuter ou si vous souhaitez reprendre une ligne de couverture de change.
+    ${closingStatement}
   </p>
   
   <p style="margin: 0 0 18px 0;">
-    N'hésitez pas à sélectionner le créneau qui vous convient le mieux <a href="${e.agendaUrl}" target="_blank" rel="noopener noreferrer" style="color: #1a73e8; text-decoration: none; font-weight: 500;">directement dans mon agenda</a>.
+    ${calendarBooking}
   </p>
   
-  <p style="margin: 0 0 4px 0;">Bien cordialement,</p>
+  <p style="margin: 0 0 4px 0;">${signoff}</p>
   <p style="margin: 0; font-weight: 600; color: #374151;">Kevin Saudubray</p>
 </div>`;
 
     // Plain text version
-    const plainText = `Bonjour ${e.clientName},
+    const plainTextMoveStatement = isEn
+      ? `Since ${e.period}, we have observed a ${e.movePct} move ${moveDirectionText} on the ${e.pair} currency pair.`
+      : `Depuis ${e.period}, nous avons observé un mouvement de ${e.movePct} ${moveDirectionText} sur la paire ${e.pair}.`;
 
-J’espère que vous allez bien.
+    const plainTextCalendar = isEn
+      ? `Feel free to select a time slot that suits you best [directly in my calendar](${e.agendaUrl}).`
+      : `N'hésitez pas à sélectionner le créneau qui vous convient le mieux [directement dans mon agenda](${e.agendaUrl}).`;
 
-Depuis ${e.period}, nous avons observé un mouvement de ${e.movePct} en votre ${e.direction} sur la paire ${e.pair}.
+    const plainText = `${greeting}
 
-Au cours des prochaines semaines, plusieurs événements majeurs sont susceptibles d'impacter directement le taux de change. Vous trouverez plus de détails ci-dessous :
+${introWish}
 
-Facteurs clés
+${plainTextMoveStatement}
+
+${nextWeeksIntro}
+
+${section1Title}
 
 ${kf.map(f => `• [${f.title}](${f.url}) : ${f.desc}`).join('\n')}
 
-Événements à venir
+${section2Title}
 
 ${ue.map(u => `• [${u.title}](${u.url}) : ${u.desc}`).join('\n')}
 
-Je reste à votre disposition si vous souhaitez en discuter ou si vous souhaitez reprendre une ligne de couverture de change.
+${closingStatement}
 
-N'hésitez pas à sélectionner le créneau qui vous convient le mieux [directement dans mon agenda](${e.agendaUrl}).
+${plainTextCalendar}
 
-Bien cordialement,
+${signoff}
 Kevin Saudubray`;
 
-    return { subject, htmlBody, plainText };
+    return { subject, htmlBody, plainText, isEn };
   }
 
   // ─── Render Email Generator Sub-Tab ───
   function renderEmailGeneratorTab() {
     const e = state.email;
+    const isEn = (e.lang === 'en');
     const { subject, htmlBody } = generateExactEmail();
 
     return `
@@ -989,17 +1310,32 @@ Kevin Saudubray`;
         <!-- Left Column: Controls & Dynamic Form -->
         <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05);">
           
+          <!-- Language Switcher Bar (FR vs EN with FX Forwards) -->
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; background:#f8fafc; padding:8px 12px; border-radius:8px; border:1px solid #e2e8f0;">
+            <span style="font-size:11px; font-weight:800; color:#1e293b; text-transform:uppercase; display:flex; align-items:center; gap:5px;">
+              <span>🌐</span> ${isEn ? 'Email Language :' : 'Langue de l\'email :'}
+            </span>
+            <div style="display:flex; gap:6px;">
+              <button class="email-lang-btn ${!isEn ? 'active' : ''}" data-lang="fr" style="padding:5px 11px; border-radius:6px; font-size:11px; font-weight:800; cursor:pointer; border:1px solid ${!isEn ? '#dc2626' : '#cbd5e1'}; background:${!isEn ? '#fee2e2' : '#ffffff'}; color:${!isEn ? '#991b1b' : '#475569'}; transition:all 0.15s;">
+                🇫🇷 Français
+              </button>
+              <button class="email-lang-btn ${isEn ? 'active' : ''}" data-lang="en" style="padding:5px 11px; border-radius:6px; font-size:11px; font-weight:800; cursor:pointer; border:1px solid ${isEn ? '#2563eb' : '#cbd5e1'}; background:${isEn ? '#eff6ff' : '#ffffff'}; color:${isEn ? '#1e40af' : '#475569'}; transition:all 0.15s;">
+                🇬🇧 English (FX Forwards)
+              </button>
+            </div>
+          </div>
+
           <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:12px; margin-bottom:16px;">
             <div>
               <h3 style="margin:0 0 2px 0; font-size:15px; font-weight:800; color:#1e3a8a;">
-                ⚙️ Paramètres de l'Email Client
+                ⚙️ ${isEn ? 'Client Email Parameters' : 'Paramètres de l\'Email Client'}
               </h3>
               <p style="margin:0; font-size:11.5px; color:#64748b;">
-                Ajustez pour n'importe quelle devise ou restaurez le modèle EUR/USD.
+                ${isEn ? 'Adjust parameters or restore reference EUR/USD model.' : 'Ajustez pour n\'importe quelle devise ou restaurez le modèle EUR/USD.'}
               </p>
             </div>
-            <button id="btn-reset-email-model" style="padding:5px 9px; font-size:11px; font-weight:700; background:#f1f5f9; color:#1e3a8a; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;" title="Rétablir le texte et les articles exacts du modèle de référence EUR/USD">
-              ↺ Modèle EUR/USD
+            <button id="btn-reset-email-model" style="padding:5px 9px; font-size:11px; font-weight:700; background:#f1f5f9; color:#1e3a8a; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;" title="${isEn ? 'Restore reference EUR/USD template' : 'Rétablir le modèle EUR/USD de référence'}">
+              ↺ ${isEn ? 'EUR/USD Reference' : 'Modèle EUR/USD'}
             </button>
           </div>
 
@@ -1007,13 +1343,13 @@ Kevin Saudubray`;
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;">
             <div>
               <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
-                Nom du client
+                ${isEn ? 'Client Name' : 'Nom du client'}
               </label>
-              <input type="text" id="cfg-client-name" value="${e.clientName}" placeholder="XXXX ou prénom" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600;" />
+              <input type="text" id="cfg-client-name" value="${e.clientName}" placeholder="${isEn ? 'XXXX or first name' : 'XXXX ou prénom'}" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600;" />
             </div>
             <div>
               <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
-                Paire de devises
+                ${isEn ? 'Currency Pair' : 'Paire de devises'}
               </label>
               <select id="cfg-pair" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; background:#ffffff; color:#1e3a8a;">
                 ${MONITORED_PAIRS.map(p => `
@@ -1027,13 +1363,13 @@ Kevin Saudubray`;
           <div style="display:grid; grid-template-columns:1.2fr 1fr; gap:10px; margin-bottom:14px;">
             <div>
               <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
-                Période de référence
+                ${isEn ? 'Reference Period' : 'Période de référence'}
               </label>
-              <input type="text" id="cfg-period" value="${e.period}" placeholder="la fin du mois d'août" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600;" />
+              <input type="text" id="cfg-period" value="${e.period}" placeholder="${isEn ? 'the end of August' : 'la fin du mois d\'août'}" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:600;" />
             </div>
             <div>
               <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
-                Mouvement observé %
+                ${isEn ? 'Observed Move %' : 'Mouvement observé %'}
               </label>
               <input type="text" id="cfg-move-pct" value="${e.movePct}" placeholder="4.05 %" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; font-weight:700; color:${e.direction === 'défaveur' ? '#dc2626' : '#16a34a'};" />
             </div>
@@ -1042,14 +1378,14 @@ Kevin Saudubray`;
           <!-- Direction Toggle -->
           <div style="margin-bottom:14px;">
             <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
-              Sens de la dérive pour le client
+              ${isEn ? 'Direction for Client' : 'Sens de la dérive pour le client'}
             </label>
             <div style="display:flex; gap:8px;">
               <button class="dir-toggle-btn ${e.direction === 'défaveur' ? 'active' : ''}" data-dir="défaveur" style="flex:1; padding:6px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; border:1px solid ${e.direction === 'défaveur' ? '#dc2626' : '#cbd5e1'}; background:${e.direction === 'défaveur' ? '#fee2e2' : '#ffffff'}; color:${e.direction === 'défaveur' ? '#991b1b' : '#475569'};">
-                🔻 en votre défaveur (Alerte risque)
+                🔻 ${isEn ? 'Against you (Risk Alert)' : 'en votre défaveur (Alerte risque)'}
               </button>
               <button class="dir-toggle-btn ${e.direction === 'faveur' ? 'active' : ''}" data-dir="faveur" style="flex:1; padding:6px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; border:1px solid ${e.direction === 'faveur' ? '#16a34a' : '#cbd5e1'}; background:${e.direction === 'faveur' ? '#dcfce7' : '#ffffff'}; color:${e.direction === 'faveur' ? '#166534' : '#475569'};">
-                🔺 en votre faveur (Opportunité)
+                🔺 ${isEn ? 'In your favour (Opportunity)' : 'en votre faveur (Opportunité)'}
               </button>
             </div>
           </div>
@@ -1058,10 +1394,10 @@ Kevin Saudubray`;
           <div style="margin-bottom:16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
               <label style="font-size:11px; font-weight:800; color:#1e40af; text-transform:uppercase;">
-                Facteurs clés (${e.keyFactors.filter(x => x.enabled).length} actifs)
+                ${isEn ? 'Key Drivers' : 'Facteurs clés'} (${e.keyFactors.filter(x => x.enabled).length} ${isEn ? 'active' : 'actifs'})
               </label>
               <button id="btn-add-kf" style="background:none; border:none; color:#2563eb; font-size:11px; font-weight:700; cursor:pointer;">
-                + Ajouter
+                + ${isEn ? 'Add' : 'Ajouter'}
               </button>
             </div>
             <div style="display:flex; flex-direction:column; gap:8px;">
@@ -1073,7 +1409,7 @@ Kevin Saudubray`;
                     <button class="btn-del-kf" data-idx="${i}" style="border:none; background:none; color:#ef4444; font-size:11px; cursor:pointer;" title="Supprimer">✕</button>
                   </div>
                   <div style="margin-left:22px;">
-                    <input type="text" class="inp-kf-url" data-idx="${i}" value="${kf.url}" placeholder="URL de l'article" style="width:100%; font-size:9.5px; color:#64748b; border:1px solid #cbd5e1; border-radius:3px; padding:2px 4px; margin-bottom:4px;" />
+                    <input type="text" class="inp-kf-url" data-idx="${i}" value="${kf.url}" placeholder="${isEn ? 'Article URL' : 'URL de l\'article'}" style="width:100%; font-size:9.5px; color:#64748b; border:1px solid #cbd5e1; border-radius:3px; padding:2px 4px; margin-bottom:4px;" />
                     <textarea class="inp-kf-desc" data-idx="${i}" rows="2" style="width:100%; font-size:10.5px; color:#334155; border:1px solid #cbd5e1; border-radius:3px; padding:3px 4px; resize:vertical;">${kf.desc}</textarea>
                   </div>
                 </div>
@@ -1085,10 +1421,10 @@ Kevin Saudubray`;
           <div style="margin-bottom:16px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
               <label style="font-size:11px; font-weight:800; color:#1e40af; text-transform:uppercase;">
-                Événements à venir (${e.upcomingEvents.filter(x => x.enabled).length} actifs)
+                ${isEn ? 'Upcoming Events' : 'Événements à venir'} (${e.upcomingEvents.filter(x => x.enabled).length} ${isEn ? 'active' : 'actifs'})
               </label>
               <button id="btn-add-ue" style="background:none; border:none; color:#2563eb; font-size:11px; font-weight:700; cursor:pointer;">
-                + Ajouter
+                + ${isEn ? 'Add' : 'Ajouter'}
               </button>
             </div>
             <div style="display:flex; flex-direction:column; gap:8px;">
@@ -1100,7 +1436,7 @@ Kevin Saudubray`;
                     <button class="btn-del-ue" data-idx="${i}" style="border:none; background:none; color:#ef4444; font-size:11px; cursor:pointer;" title="Supprimer">✕</button>
                   </div>
                   <div style="margin-left:22px;">
-                    <input type="text" class="inp-ue-url" data-idx="${i}" value="${ue.url}" placeholder="URL de l'article" style="width:100%; font-size:9.5px; color:#64748b; border:1px solid #cbd5e1; border-radius:3px; padding:2px 4px; margin-bottom:4px;" />
+                    <input type="text" class="inp-ue-url" data-idx="${i}" value="${ue.url}" placeholder="${isEn ? 'Article URL' : 'URL de l\'article'}" style="width:100%; font-size:9.5px; color:#64748b; border:1px solid #cbd5e1; border-radius:3px; padding:2px 4px; margin-bottom:4px;" />
                     <textarea class="inp-ue-desc" data-idx="${i}" rows="2" style="width:100%; font-size:10.5px; color:#334155; border:1px solid #cbd5e1; border-radius:3px; padding:3px 4px; resize:vertical;">${ue.desc}</textarea>
                   </div>
                 </div>
@@ -1111,7 +1447,7 @@ Kevin Saudubray`;
           <!-- Agenda Link -->
           <div>
             <label style="display:block; font-size:10.5px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:4px;">
-              Lien direct agenda (Google Calendar)
+              ${isEn ? 'Direct Calendar Link (Google Calendar)' : 'Lien direct agenda (Google Calendar)'}
             </label>
             <input type="text" id="cfg-agenda-url" value="${e.agendaUrl}" style="width:100%; padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:11px; color:#1a73e8;" />
           </div>
@@ -1124,14 +1460,16 @@ Kevin Saudubray`;
           <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px 10px 0 0; padding:12px 18px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:14px;">✉️</span>
-              <span style="font-size:13px; font-weight:800; color:#0f172a;">Aperçu Format Gmail / Outlook (${e.pair})</span>
+              <span style="font-size:13px; font-weight:800; color:#0f172a;">
+                ${isEn ? `Gmail / Outlook Preview (${e.pair} • English - FX Forwards)` : `Aperçu Format Gmail / Outlook (${e.pair} • Français)`}
+              </span>
             </div>
             <div style="display:flex; gap:8px;">
               <button id="btn-copy-gmail-html" style="padding:8px 14px; background:#1e3a8a; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
-                📋 Copier pour Gmail / Outlook (Format Riche)
+                📋 ${isEn ? 'Copy for Gmail / Outlook (Rich Format)' : 'Copier pour Gmail / Outlook (Format Riche)'}
               </button>
               <button id="btn-copy-gmail-text" style="padding:8px 12px; background:#f8fafc; border:1px solid #cbd5e1; color:#334155; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px;">
-                📝 Texte Brut
+                📝 ${isEn ? 'Plain Text' : 'Texte Brut'}
               </button>
             </div>
           </div>
@@ -1146,7 +1484,7 @@ Kevin Saudubray`;
                   ${subject}
                 </h2>
                 <span style="font-size:10px; background:#e5e7eb; color:#4b5563; padding:2px 6px; border-radius:4px; font-weight:500;">
-                  Boîte de réception
+                  ${isEn ? 'Inbox' : 'Boîte de réception'}
                 </span>
               </div>
               <div style="display:flex; gap:12px; color:#6b7280; font-size:14px;">
@@ -1166,11 +1504,11 @@ Kevin Saudubray`;
                     <span style="font-size:13px; font-weight:700; color:#111827;">Kevin Saudubray</span>
                     <span style="display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; background:#1d4ed8; color:#ffffff; border-radius:50%; font-size:8px; font-weight:900;">✓</span>
                   </div>
-                  <div style="font-size:11.5px; color:#6b7280;">À moi ▾</div>
+                  <div style="font-size:11.5px; color:#6b7280;">${isEn ? 'to me ▾' : 'À moi ▾'}</div>
                 </div>
               </div>
               <div style="display:flex; align-items:center; gap:10px; color:#6b7280; font-size:11.5px;">
-                <span>Aujourd'hui à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span>${isEn ? 'Today at ' : 'Aujourd\'hui à '}${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                 <span>⭐</span>
                 <span>😊</span>
                 <span>↩️</span>
@@ -1250,8 +1588,8 @@ Kevin Saudubray`;
         <!-- Sub-Navigation: Email Template vs Feed -->
         <div style="display:flex; gap:10px; margin-bottom:18px; border-bottom:2px solid #e2e8f0; padding-bottom:8px;">
           <button class="subtab-btn ${state.activeSubTab === 'email-template' ? 'active' : ''}" data-subtab="email-template" style="padding:10px 20px; font-size:13px; font-weight:800; cursor:pointer; border:none; background:${state.activeSubTab === 'email-template' ? '#1e3a8a' : '#f1f5f9'}; color:${state.activeSubTab === 'email-template' ? '#ffffff' : '#475569'}; border-radius:6px; display:flex; align-items:center; gap:8px; transition:all 0.15s;">
-            <span>✉️</span> Template d'Email Commercial (EUR/USD & Alertes Cross)
-            <span style="font-size:10px; background:#f59e0b; color:#ffffff; padding:1px 6px; border-radius:10px;">PRÊT À L'EMPLOI</span>
+            <span>✉️</span> Template d'Email Commercial (FR & EN FX Forwards)
+            <span style="font-size:10px; background:#f59e0b; color:#ffffff; padding:1px 6px; border-radius:10px;">BILINGUE</span>
           </button>
           <button class="subtab-btn ${state.activeSubTab === 'feed' ? 'active' : ''}" data-subtab="feed" style="padding:10px 20px; font-size:13px; font-weight:800; cursor:pointer; border:none; background:${state.activeSubTab === 'feed' ? '#1e3a8a' : '#f1f5f9'}; color:${state.activeSubTab === 'feed' ? '#ffffff' : '#475569'}; border-radius:6px; display:flex; align-items:center; gap:8px; transition:all 0.15s;">
             <span>📰</span> Revue de Presse Multi-Devises (${totalAll} articles)
@@ -1533,7 +1871,13 @@ Kevin Saudubray`;
         const url = decodeURIComponent(btn.dataset.url || '');
         const desc = decodeURIComponent(btn.dataset.summary || '');
         const pairs = (btn.dataset.pairs || 'EUR/USD').split(',');
+        const articleLang = btn.dataset.lang || 'fr';
         
+        // Auto-match email language with article language if useful
+        if (articleLang === 'en' || articleLang === 'fr') {
+          state.email.lang = articleLang;
+        }
+
         // Switch email pair to matching pair if available
         if (pairs.length > 0 && pairs[0] && MONITORED_PAIRS.some(p => p.code === pairs[0])) {
           state.email.pair = pairs[0];
@@ -1553,7 +1897,8 @@ Kevin Saudubray`;
         render();
 
         if (window.App && window.App.showToast) {
-          window.App.showToast(`Article inséré dans les Facteurs Clés pour ${state.email.pair} !`, 'success');
+          const langLabel = state.email.lang === 'en' ? 'en Anglais (FX Forwards)' : 'en Français';
+          window.App.showToast(`Article inséré dans les Facteurs Clés pour ${state.email.pair} (${langLabel}) !`, 'success');
         }
       });
     });
@@ -1571,19 +1916,43 @@ Kevin Saudubray`;
       });
     });
 
-    // ─── EMAIL TEMPLATE CONTROLS ───
+    // ─── EMAIL TEMPLATE CONTROLS & BILINGUAL SWITCH ───
+    document.querySelectorAll('.email-lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const targetLang = btn.dataset.lang;
+        if (state.email.lang === targetLang) return;
+        state.email.lang = targetLang;
+
+        // Automatically switch email preset to target language for active pair
+        const preset = getPairPreset(state.email.pair, targetLang);
+        state.email.period = preset.period;
+        state.email.movePct = preset.movePct;
+        state.email.direction = preset.direction;
+        state.email.keyFactors = JSON.parse(JSON.stringify(preset.keyFactors));
+        state.email.upcomingEvents = JSON.parse(JSON.stringify(preset.upcomingEvents));
+
+        render();
+        if (window.App && window.App.showToast) {
+          const msg = targetLang === 'en' 
+            ? 'Switched to English version (FX Forwards) !'
+            : 'Passé en version Française (Couverture de change) !';
+          window.App.showToast(msg, 'info');
+        }
+      });
+    });
+
     document.getElementById('cfg-client-name')?.addEventListener('input', (e) => {
       state.email.clientName = e.target.value || 'XXXX';
       updateEmailPreviewOnly();
     });
 
-    // Pair change in email template: load pair preset if available
+    // Pair change in email template: load pair preset if available for active language
     document.getElementById('cfg-pair')?.addEventListener('change', (e) => {
       const selectedPair = e.target.value;
       state.email.pair = selectedPair;
       
-      if (PAIR_EMAIL_PRESETS[selectedPair]) {
-        const preset = PAIR_EMAIL_PRESETS[selectedPair];
+      const preset = getPairPreset(selectedPair, state.email.lang);
+      if (preset) {
         state.email.period = preset.period;
         state.email.movePct = preset.movePct;
         state.email.direction = preset.direction;
@@ -1591,7 +1960,8 @@ Kevin Saudubray`;
         state.email.upcomingEvents = JSON.parse(JSON.stringify(preset.upcomingEvents));
         render();
         if (window.App && window.App.showToast) {
-          window.App.showToast(`Modèle d'email adapté automatiquement pour ${selectedPair} !`, 'info');
+          const langText = state.email.lang === 'en' ? 'English (FX Forwards)' : 'Français';
+          window.App.showToast(`Modèle d'email adapté automatiquement pour ${selectedPair} (${langText}) !`, 'info');
         }
       } else {
         updateEmailPreviewOnly();
@@ -1620,7 +1990,7 @@ Kevin Saudubray`;
       updateEmailPreviewOnly();
     });
 
-    // Checkboxes and inputs for Facteurs Clés
+    // Checkboxes and inputs for Facteurs Clés / Key Drivers
     document.querySelectorAll('.chk-kf').forEach(chk => {
       chk.addEventListener('change', () => {
         const idx = parseInt(chk.dataset.idx, 10);
@@ -1657,17 +2027,18 @@ Kevin Saudubray`;
       });
     });
     document.getElementById('btn-add-kf')?.addEventListener('click', () => {
+      const isEn = (state.email.lang === 'en');
       state.email.keyFactors.push({
         id: 'kf-' + Date.now(),
-        title: 'Nouveau facteur clé',
+        title: isEn ? 'New key driver' : 'Nouveau facteur clé',
         url: 'https://www.reuters.com/markets/currencies/',
-        desc: 'Explication factuelle de l\'impact direct sur le taux de change.',
+        desc: isEn ? 'Factual explanation of direct market impact on the currency pair.' : 'Explication factuelle de l\'impact direct sur le taux de change.',
         enabled: true
       });
       render();
     });
 
-    // Checkboxes and inputs for Événements à Venir
+    // Checkboxes and inputs for Événements à Venir / Upcoming Events
     document.querySelectorAll('.chk-ue').forEach(chk => {
       chk.addEventListener('change', () => {
         const idx = parseInt(chk.dataset.idx, 10);
@@ -1704,19 +2075,20 @@ Kevin Saudubray`;
       });
     });
     document.getElementById('btn-add-ue')?.addEventListener('click', () => {
+      const isEn = (state.email.lang === 'en');
       state.email.upcomingEvents.push({
         id: 'ue-' + Date.now(),
-        title: 'Nouvel événement (JJ/MM)',
+        title: isEn ? 'Upcoming catalyst (DD/MM)' : 'Nouvel événement (JJ/MM)',
         url: 'https://www.investing.com/economic-calendar/',
-        desc: 'Impact anticipé en une ligne sur la paire de devises.',
+        desc: isEn ? 'Anticipated 1-line impact on the currency pair.' : 'Impact anticipé en une ligne sur la paire de devises.',
         enabled: true
       });
       render();
     });
 
-    // Reset email to reference EUR/USD model
+    // Reset email to reference EUR/USD model in active language
     document.getElementById('btn-reset-email-model')?.addEventListener('click', () => {
-      const preset = PAIR_EMAIL_PRESETS['EUR/USD'];
+      const preset = getPairPreset('EUR/USD', state.email.lang);
       state.email.pair = 'EUR/USD';
       state.email.period = preset.period;
       state.email.movePct = preset.movePct;
@@ -1725,13 +2097,16 @@ Kevin Saudubray`;
       state.email.upcomingEvents = JSON.parse(JSON.stringify(preset.upcomingEvents));
       render();
       if (window.App && window.App.showToast) {
-        window.App.showToast('Modèle de référence EUR/USD rétabli !', 'info');
+        const msg = state.email.lang === 'en' 
+          ? 'Reference EUR/USD template restored (English - FX Forwards) !'
+          : 'Modèle de référence EUR/USD rétabli (Français) !';
+        window.App.showToast(msg, 'info');
       }
     });
 
     // Copy Email HTML (Rich clipboard for Gmail & Outlook)
     document.getElementById('btn-copy-gmail-html')?.addEventListener('click', async () => {
-      const { htmlBody, plainText } = generateExactEmail();
+      const { htmlBody, plainText, isEn } = generateExactEmail();
       try {
         if (navigator.clipboard && window.ClipboardItem) {
           const blobHtml = new Blob([htmlBody], { type: 'text/html' });
@@ -1744,15 +2119,18 @@ Kevin Saudubray`;
         }
         const btn = document.getElementById('btn-copy-gmail-html');
         if (btn) {
-          btn.innerHTML = '✓ Copié en Format Gmail !';
+          btn.innerHTML = isEn ? '✓ Copied for Gmail !' : '✓ Copié en Format Gmail !';
           btn.style.background = '#15803d';
           setTimeout(() => {
-            btn.innerHTML = '📋 Copier pour Gmail / Outlook (Format Riche)';
+            btn.innerHTML = isEn ? '📋 Copy for Gmail / Outlook (Rich Format)' : '📋 Copier pour Gmail / Outlook (Format Riche)';
             btn.style.background = '#1e3a8a';
           }, 2500);
         }
         if (window.App && window.App.showToast) {
-          window.App.showToast('Email prêt à coller dans Gmail ou Outlook avec liens cliquables !', 'success');
+          const msg = isEn
+            ? 'Email ready to paste in Gmail or Outlook with active links !'
+            : 'Email prêt à coller dans Gmail ou Outlook avec liens cliquables !';
+          window.App.showToast(msg, 'success');
         }
       } catch (err) {
         navigator.clipboard.writeText(plainText).then(() => {
@@ -1765,15 +2143,17 @@ Kevin Saudubray`;
 
     // Copy Email PlainText / Markdown
     document.getElementById('btn-copy-gmail-text')?.addEventListener('click', () => {
-      const { plainText } = generateExactEmail();
+      const { plainText, isEn } = generateExactEmail();
       navigator.clipboard.writeText(plainText).then(() => {
         const btn = document.getElementById('btn-copy-gmail-text');
         if (btn) {
-          btn.innerHTML = '✓ Copié !';
-          setTimeout(() => { btn.innerHTML = '📝 Texte Brut'; }, 2000);
+          btn.innerHTML = isEn ? '✓ Copied !' : '✓ Copié !';
+          setTimeout(() => { 
+            btn.innerHTML = isEn ? '📝 Plain Text' : '📝 Texte Brut'; 
+          }, 2000);
         }
         if (window.App && window.App.showToast) {
-          window.App.showToast('Texte brut copié pour WhatsApp/Slack/Mail !', 'success');
+          window.App.showToast(isEn ? 'Plain text copied !' : 'Texte brut copié !', 'success');
         }
       });
     });
