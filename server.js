@@ -419,6 +419,72 @@ function detectCategory(title, desc, defCat) {
   return defCat || 'Macroéconomie';
 }
 
+function detectPairs(title, desc) {
+  const text = ((title || '') + ' ' + (desc || '')).toLowerCase();
+  const pairs = new Set();
+
+  if (text.includes('eur/usd') || text.includes('eurusd') || text.includes('euro-dollar') || text.includes('euro dollar')) {
+    pairs.add('EUR/USD');
+  }
+  if (text.includes('eur/chf') || text.includes('eurchf') || text.includes('franc suisse') || text.includes('swiss franc') || text.includes('bns') || text.includes('snb')) {
+    pairs.add('EUR/CHF');
+  }
+  if (text.includes('chf/usd') || text.includes('chfusd') || text.includes('usd/chf') || text.includes('usdchf')) {
+    pairs.add('CHF/USD');
+    pairs.add('EUR/CHF');
+  }
+  if (text.includes('pln') || text.includes('zloty') || text.includes('złoty') || text.includes('nbp') || text.includes('poland') || text.includes('pologne')) {
+    pairs.add('EUR/PLN');
+    pairs.add('USD/PLN');
+  }
+  if (text.includes('eur/pln') || text.includes('eurpln')) pairs.add('EUR/PLN');
+  if (text.includes('usd/pln') || text.includes('usdpln')) pairs.add('USD/PLN');
+
+  if (text.includes('huf') || text.includes('forint') || text.includes('mnb') || text.includes('hungary') || text.includes('hongrie') || text.includes('usd/huf') || text.includes('usdhuf')) {
+    pairs.add('USD/HUF');
+  }
+
+  if (text.includes('czk') || text.includes('koruna') || text.includes('couronne') || text.includes('cnb') || text.includes('czech') || text.includes('tchèque') || text.includes('czk/usd') || text.includes('czkusd')) {
+    pairs.add('CZK/USD');
+  }
+
+  if (text.includes('gbp') || text.includes('pound') || text.includes('sterling') || text.includes('boe') || text.includes('bank of england') || text.includes('eur/gbp') || text.includes('gbp/usd')) {
+    pairs.add('EUR/GBP');
+    pairs.add('GBP/USD');
+  }
+
+  if (text.includes('bce') || text.includes('ecb') || text.includes('lagarde') || text.includes('zone euro') || text.includes('eurozone') || text.includes('dette souveraine') || text.includes('french') || text.includes('déficit')) {
+    pairs.add('EUR/USD');
+    pairs.add('EUR/CHF');
+  }
+
+  if (text.includes('fed') || text.includes('powell') || text.includes('fomc') || text.includes('dollar') || text.includes('treasury') || text.includes('midterm') || text.includes('trump') || text.includes('dxy')) {
+    pairs.add('EUR/USD');
+    pairs.add('CHF/USD');
+    pairs.add('USD/PLN');
+    pairs.add('USD/HUF');
+    pairs.add('CZK/USD');
+  }
+
+  if (pairs.size === 0) {
+    if (text.includes('oil') || text.includes('petrole') || text.includes('pétrole') || text.includes('brent') || text.includes('geopolitic') || text.includes('géopolitique') || text.includes('moyen-orient') || text.includes('iran') || text.includes('hormuz')) {
+      pairs.add('EUR/USD');
+      pairs.add('EUR/CHF');
+    } else {
+      pairs.add('EUR/USD');
+    }
+  }
+
+  return Array.from(pairs);
+}
+
+function detectKeyDossier(title, desc, pubTime, now) {
+  const text = ((title || '') + ' ' + (desc || '')).toLowerCase();
+  const isStructuralTopic = /agitation|dette souveraine|sovereign debt|midterm|élection|election|trump|divergence|structural|budget|déficit|mandat|fomc decision|bce décision|ecb decision|rate cut cycle|tariffs|droits de douane/.test(text);
+  const isOlder = (now - pubTime) > (8 * 3600 * 1000);
+  return isStructuralTopic || isOlder;
+}
+
 async function fetchPressReview() {
   const now = Date.now();
   if (pressCache.data && (now - pressCache.timestamp < 15 * 60 * 1000)) {
@@ -463,18 +529,25 @@ async function fetchPressReview() {
 
         const d = pubDateStr ? new Date(pubDateStr) : new Date();
         const pubTime = isNaN(d.getTime()) ? now : d.getTime();
+        const artDateStr = parisDateStr(pubTime);
+        const todayDateStr = parisDateStr(now);
+        const isToday = (artDateStr === todayDateStr);
+        const isKey = detectKeyDossier(title, desc, pubTime, now);
 
         articles.push({
           id: feed.id + '-' + pubTime + '-' + Math.random().toString(36).substr(2, 6),
           title,
-          summary: desc ? (desc.length > 160 ? desc.slice(0, 157) + '...' : desc) : '',
+          summary: desc ? (desc.length > 180 ? desc.slice(0, 177) + '...' : desc) : '',
           link,
           publisher: feed.name,
           sourceId: feed.id,
           lang: feed.lang,
           category: detectCategory(title, desc, feed.defCat),
+          pairs: detectPairs(title, desc),
+          isToday,
+          isKeyDossier: isKey,
           pubTime,
-          dateStr: parisDateStr(pubTime),
+          dateStr: artDateStr,
           timeAgo: timeAgo(d)
         });
       });
@@ -558,17 +631,43 @@ const server = http.createServer(async (req, res) => {
   // API Route: Institutional Press Review (FR & EN from Reuters, ING, FX Empire, Guardian, Sky, Investing, FXStreet, US News, etc.)
   if (pathname === '/api/press-review') {
     try {
+      const forceRefresh = urlObj.searchParams.get('refresh') === 'true';
+      if (forceRefresh) {
+        pressCache = { data: null, timestamp: 0 };
+      }
       let articles = await fetchPressReview();
       const lang = urlObj.searchParams.get('lang'); // 'fr' | 'en' | 'all'
       const category = urlObj.searchParams.get('category'); // 'FX & Devises' | etc.
+      const pair = urlObj.searchParams.get('pair'); // 'EUR/USD' | 'EUR/CHF' | etc.
+      const freshness = urlObj.searchParams.get('freshness'); // 'today' | 'key_dossier' | 'all'
       const source = urlObj.searchParams.get('source');
       const q = (urlObj.searchParams.get('q') || '').toLowerCase().trim();
+
+      // Compute statistics before filters
+      const frCount = articles.filter(a => a.lang === 'fr').length;
+      const enCount = articles.filter(a => a.lang === 'en').length;
+      const todayCount = articles.filter(a => a.isToday).length;
+      const keyCount = articles.filter(a => a.isKeyDossier).length;
+
+      const pairStats = {};
+      const pairsMonitored = ['EUR/USD', 'EUR/CHF', 'CHF/USD', 'EUR/PLN', 'USD/PLN', 'USD/HUF', 'CZK/USD', 'EUR/GBP'];
+      pairsMonitored.forEach(p => {
+        pairStats[p] = articles.filter(a => Array.isArray(a.pairs) && a.pairs.includes(p)).length;
+      });
 
       if (lang && lang !== 'all') {
         articles = articles.filter(a => a.lang === lang);
       }
       if (category && category !== 'all' && category !== 'Tous') {
         articles = articles.filter(a => a.category.toLowerCase().includes(category.toLowerCase()));
+      }
+      if (pair && pair !== 'all' && pair !== 'Tous') {
+        articles = articles.filter(a => Array.isArray(a.pairs) && a.pairs.includes(pair));
+      }
+      if (freshness === 'today') {
+        articles = articles.filter(a => a.isToday);
+      } else if (freshness === 'key_dossier') {
+        articles = articles.filter(a => a.isKeyDossier);
       }
       if (source && source !== 'all') {
         articles = articles.filter(a => a.publisher.toLowerCase().includes(source.toLowerCase()) || a.sourceId === source);
@@ -577,9 +676,6 @@ const server = http.createServer(async (req, res) => {
         articles = articles.filter(a => a.title.toLowerCase().includes(q) || (a.summary && a.summary.toLowerCase().includes(q)));
       }
 
-      const frCount = articles.filter(a => a.lang === 'fr').length;
-      const enCount = articles.filter(a => a.lang === 'en').length;
-
       res.writeHead(200, {
         'Content-Type': 'application/json; charset=utf-8',
         'Access-Control-Allow-Origin': '*'
@@ -587,7 +683,7 @@ const server = http.createServer(async (req, res) => {
       res.end(JSON.stringify({
         success: true,
         total: articles.length,
-        stats: { fr: frCount, en: enCount },
+        stats: { fr: frCount, en: enCount, today: todayCount, keyDossiers: keyCount, pairs: pairStats },
         articles,
         timestamp: new Date().toISOString()
       }));
