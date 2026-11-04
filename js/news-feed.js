@@ -1493,7 +1493,7 @@ Kevin Saudubray`;
 
           <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
             <input type="text" id="inp-filter-saved-emails" placeholder="${isEn ? 'Filter by pair or keyword...' : 'Filtrer par devise ou mot-clé...'}" style="padding:7px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; min-width:220px;" />
-            <button id="btn-open-save-modal-bottom" style="padding:8px 14px; background:#059669; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.08);">
+            <button id="btn-open-save-modal-bottom" onclick="window.NewsFeed && window.NewsFeed.openSaveModal && window.NewsFeed.openSaveModal();" style="padding:8px 14px; background:#059669; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.08);">
               💾 ${isEn ? 'Save Current Email' : 'Sauvegarder l\'email actuel'}
             </button>
           </div>
@@ -1588,8 +1588,8 @@ Kevin Saudubray`;
     
     return `
       <!-- Modal Overlay: Save Current Email as Favorite / Template -->
-      <div id="modal-save-email-overlay" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.55); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
-        <div class="modal" style="width:100%; max-width:540px; background:#ffffff; border-radius:12px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.25); border:1px solid #cbd5e1; overflow:hidden;">
+      <div id="modal-save-email-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.7); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(3px); opacity:1; pointer-events:auto;">
+        <div style="width:100%; max-width:540px; margin:20px; background:#ffffff; border-radius:12px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.35); border:1px solid #cbd5e1; overflow:hidden;">
           
           <div style="padding:16px 22px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
             <div style="display:flex; align-items:center; gap:8px;">
@@ -1643,6 +1643,79 @@ Kevin Saudubray`;
         </div>
       </div>
     `;
+  }
+
+  function openSaveModal() {
+    let modal = document.getElementById('modal-save-email-overlay');
+    if (!modal) {
+      const container = document.createElement('div');
+      container.innerHTML = renderSaveEmailModal(state.email.lang === 'en');
+      modal = container.firstElementChild;
+      document.body.appendChild(modal);
+      modal.querySelector('#btn-close-save-modal')?.addEventListener('click', closeSaveModal);
+      modal.querySelector('#btn-cancel-save-modal')?.addEventListener('click', closeSaveModal);
+      modal.querySelector('#btn-confirm-save-modal')?.addEventListener('click', handleConfirmSaveModal);
+      modal.addEventListener('click', (e) => {
+        if (e.target && e.target.id === 'modal-save-email-overlay') closeSaveModal();
+      });
+    }
+    modal.style.display = 'flex';
+    modal.style.opacity = '1';
+    modal.style.pointerEvents = 'auto';
+
+    const titleInp = modal.querySelector('#save-modal-title');
+    if (titleInp) {
+      const isEn = (state.email.lang === 'en');
+      titleInp.value = `${state.email.pair} - ${state.email.movePct} (${isEn ? 'EN FX Forwards' : 'FR'}) - ${new Date().toLocaleDateString('fr-FR')}`;
+      setTimeout(() => {
+        titleInp.focus();
+        titleInp.select();
+      }, 50);
+    }
+  }
+
+  function closeSaveModal() {
+    const modal = document.getElementById('modal-save-email-overlay');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  function handleConfirmSaveModal() {
+    const titleInp = document.getElementById('save-modal-title');
+    const noteInp = document.getElementById('save-modal-note');
+    const title = (titleInp && titleInp.value.trim()) 
+      ? titleInp.value.trim() 
+      : `${state.email.pair} - ${state.email.movePct}`;
+    const note = noteInp ? noteInp.value.trim() : '';
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+    const newEntry = {
+      id: 'saved_mail_' + Date.now(),
+      title: title,
+      note: note,
+      createdAt: `${dateStr} à ${timeStr}`,
+      timestamp: Date.now(),
+      emailData: JSON.parse(JSON.stringify(state.email))
+    };
+
+    const list = loadSavedEmails();
+    list.unshift(newEntry);
+    persistSavedEmails(list);
+
+    closeSaveModal();
+    render();
+
+    setTimeout(() => {
+      document.getElementById('saved-emails-section')?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+
+    if (window.App && window.App.showToast) {
+      window.App.showToast(`Modèle "${title}" sauvegardé dans vos favoris !`, 'success');
+    }
   }
 
   // ─── Render Email Generator Sub-Tab ───
@@ -1849,7 +1922,7 @@ Kevin Saudubray`;
               </span>
             </div>
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-              <button id="btn-open-save-modal" style="padding:8px 14px; background:#059669; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+              <button id="btn-open-save-modal" onclick="window.NewsFeed && window.NewsFeed.openSaveModal && window.NewsFeed.openSaveModal();" style="padding:8px 14px; background:#059669; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
                 ⭐ ${isEn ? 'Save this Email' : 'Sauvegarder ce mail'}
               </button>
               <button id="btn-copy-gmail-html" style="padding:8px 14px; background:#1e3a8a; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
@@ -2566,31 +2639,22 @@ Kevin Saudubray`;
     });
 
     // ─── SAVED COMMERCIAL EMAILS EVENT HANDLERS ───
-    const openSaveModal = () => {
-      const modal = document.getElementById('modal-save-email-overlay');
-      if (modal) {
-        modal.style.display = 'flex';
-        const titleInp = document.getElementById('save-modal-title');
-        if (titleInp) {
-          const isEn = (state.email.lang === 'en');
-          titleInp.value = `${state.email.pair} - ${state.email.movePct} (${isEn ? 'EN FX Forwards' : 'FR'}) - ${new Date().toLocaleDateString('fr-FR')}`;
-          setTimeout(() => {
-            titleInp.focus();
-            titleInp.select();
-          }, 50);
-        }
-      }
-    };
-
-    const closeSaveModal = () => {
-      const modal = document.getElementById('modal-save-email-overlay');
-      if (modal) modal.style.display = 'none';
-    };
-
-    document.getElementById('btn-open-save-modal')?.addEventListener('click', openSaveModal);
-    document.getElementById('btn-open-save-modal-bottom')?.addEventListener('click', openSaveModal);
-    document.getElementById('btn-close-save-modal')?.addEventListener('click', closeSaveModal);
-    document.getElementById('btn-cancel-save-modal')?.addEventListener('click', closeSaveModal);
+    document.getElementById('btn-open-save-modal')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      openSaveModal();
+    });
+    document.getElementById('btn-open-save-modal-bottom')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      openSaveModal();
+    });
+    document.getElementById('btn-close-save-modal')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeSaveModal();
+    });
+    document.getElementById('btn-cancel-save-modal')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeSaveModal();
+    });
 
     document.getElementById('modal-save-email-overlay')?.addEventListener('click', (e) => {
       if (e.target && e.target.id === 'modal-save-email-overlay') {
@@ -2598,41 +2662,9 @@ Kevin Saudubray`;
       }
     });
 
-    document.getElementById('btn-confirm-save-modal')?.addEventListener('click', () => {
-      const titleInp = document.getElementById('save-modal-title');
-      const noteInp = document.getElementById('save-modal-note');
-      const title = (titleInp && titleInp.value.trim()) 
-        ? titleInp.value.trim() 
-        : `${state.email.pair} - ${state.email.movePct}`;
-      const note = noteInp ? noteInp.value.trim() : '';
-
-      const now = new Date();
-      const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-
-      const newEntry = {
-        id: 'saved_mail_' + Date.now(),
-        title: title,
-        note: note,
-        createdAt: `${dateStr} à ${timeStr}`,
-        timestamp: Date.now(),
-        emailData: JSON.parse(JSON.stringify(state.email))
-      };
-
-      const list = loadSavedEmails();
-      list.unshift(newEntry);
-      persistSavedEmails(list);
-
-      closeSaveModal();
-      render();
-
-      setTimeout(() => {
-        document.getElementById('saved-emails-section')?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-
-      if (window.App && window.App.showToast) {
-        window.App.showToast(`Modèle "${title}" sauvegardé dans vos favoris !`, 'success');
-      }
+    document.getElementById('btn-confirm-save-modal')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleConfirmSaveModal();
     });
 
     // Jump / scroll to saved emails section
@@ -2775,9 +2807,23 @@ Kevin Saudubray`;
     }
   }
 
+  // Global document click delegation for save modal buttons
+  if (typeof document !== 'undefined') {
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('#btn-open-save-modal, #btn-open-save-modal-bottom');
+      if (btn) {
+        e.preventDefault();
+        openSaveModal();
+      }
+    });
+  }
+
   return {
     renderPage,
     initPage,
-    fetchArticles
+    fetchArticles,
+    openSaveModal,
+    closeSaveModal,
+    handleConfirmSaveModal
   };
 })();
