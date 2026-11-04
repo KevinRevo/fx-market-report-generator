@@ -1239,11 +1239,11 @@ window.NewsFeed = (() => {
   }
 
   // ─── Generate Exact Commercial Email (Bilingual FR / EN with "FX Forwards" & Future Dates) ───
-  function generateExactEmail() {
-    const e = state.email;
+  function generateExactEmail(customEmail) {
+    const e = customEmail || state.email;
     const isEn = (e.lang === 'en');
-    const kf = e.keyFactors.filter(x => x.enabled);
-    const ue = e.upcomingEvents.filter(x => x.enabled);
+    const kf = (e.keyFactors || []).filter(x => x.enabled);
+    const ue = (e.upcomingEvents || []).filter(x => x.enabled);
 
     // Subject lines
     const subject = isEn 
@@ -1371,11 +1371,286 @@ Kevin Saudubray`;
     return { subject, htmlBody, plainText, isEn };
   }
 
+  // ─── SAVED COMMERCIAL EMAILS & FAVORITES (LocalStorage) ───
+  const SAVED_EMAILS_STORAGE_KEY = 'ks_fx_saved_emails_v2';
+
+  function getInitialDefaultSavedEmails() {
+    const eurUsdFrPreset = PAIR_EMAIL_PRESETS['EUR/USD'].fr;
+    const eurUsdEnPreset = PAIR_EMAIL_PRESETS['EUR/USD'].en;
+    const eurChfFrPreset = PAIR_EMAIL_PRESETS['EUR/CHF'].fr;
+
+    return [
+      {
+        id: 'saved_mail_default_1',
+        title: 'EUR/USD - Dérive 4.05% (Élections US & Catalyseurs Novembre)',
+        note: 'Modèle de référence recommandé pour relance clients importateurs',
+        createdAt: '04/11/2026 à 08:00',
+        timestamp: 1793779200000,
+        emailData: {
+          lang: 'fr',
+          clientName: 'XXXX',
+          pair: 'EUR/USD',
+          period: "la fin du mois d'août",
+          movePct: '4.05 %',
+          direction: 'défaveur',
+          agendaUrl: 'https://calendar.app.google/18zB9wv3EnRyxmQBA',
+          keyFactors: JSON.parse(JSON.stringify(eurUsdFrPreset.keyFactors)),
+          upcomingEvents: JSON.parse(JSON.stringify(eurUsdFrPreset.upcomingEvents))
+        }
+      },
+      {
+        id: 'saved_mail_default_2',
+        title: 'Institutional EUR/USD Update - US Midterms & FX Forwards',
+        note: 'English institutional pitch with FX Forwards terminology',
+        createdAt: '04/11/2026 à 08:05',
+        timestamp: 1793779500000,
+        emailData: {
+          lang: 'en',
+          clientName: 'XXXX',
+          pair: 'EUR/USD',
+          period: 'the end of August',
+          movePct: '4.05 %',
+          direction: 'défaveur',
+          agendaUrl: 'https://calendar.app.google/18zB9wv3EnRyxmQBA',
+          keyFactors: JSON.parse(JSON.stringify(eurUsdEnPreset.keyFactors)),
+          upcomingEvents: JSON.parse(JSON.stringify(eurUsdEnPreset.upcomingEvents))
+        }
+      },
+      {
+        id: 'saved_mail_default_3',
+        title: 'EUR/CHF - Risques Budgétaires Europe & Statut Refuge Franc Suisse',
+        note: 'Approche couverture pour clients exposés aux tensions européennes',
+        createdAt: '04/11/2026 à 08:10',
+        timestamp: 1793779800000,
+        emailData: {
+          lang: 'fr',
+          clientName: 'XXXX',
+          pair: 'EUR/CHF',
+          period: 'ces 30 derniers jours',
+          movePct: '2.40 %',
+          direction: 'défaveur',
+          agendaUrl: 'https://calendar.app.google/18zB9wv3EnRyxmQBA',
+          keyFactors: JSON.parse(JSON.stringify(eurChfFrPreset.keyFactors)),
+          upcomingEvents: JSON.parse(JSON.stringify(eurChfFrPreset.upcomingEvents))
+        }
+      }
+    ];
+  }
+
+  function loadSavedEmails() {
+    try {
+      const raw = localStorage.getItem(SAVED_EMAILS_STORAGE_KEY);
+      if (!raw) {
+        const defaults = getInitialDefaultSavedEmails();
+        localStorage.setItem(SAVED_EMAILS_STORAGE_KEY, JSON.stringify(defaults));
+        return defaults;
+      }
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list) || list.length === 0) {
+        const defaults = getInitialDefaultSavedEmails();
+        localStorage.setItem(SAVED_EMAILS_STORAGE_KEY, JSON.stringify(defaults));
+        return defaults;
+      }
+      return list;
+    } catch (e) {
+      console.warn('Failed to parse saved emails, fallback to defaults', e);
+      return getInitialDefaultSavedEmails();
+    }
+  }
+
+  function persistSavedEmails(list) {
+    try {
+      localStorage.setItem(SAVED_EMAILS_STORAGE_KEY, JSON.stringify(list));
+      return true;
+    } catch (e) {
+      console.error('Failed to persist saved emails', e);
+      return false;
+    }
+  }
+
+  function renderSavedEmailsSection(savedEmails, isEn) {
+    return `
+      <div id="saved-emails-section" style="margin-top:28px; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:24px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+        
+        <!-- Section Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; border-bottom:1px solid #f1f5f9; padding-bottom:16px; margin-bottom:20px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:20px;">⭐</span>
+              <h3 style="margin:0; font-size:17px; font-weight:800; color:#0f172a;">
+                ${isEn ? 'Saved Emails & High-Converting Templates' : 'Mails Sauvegardés & Modèles Favoris'}
+              </h3>
+              <span style="background:#fef3c7; color:#92400e; font-size:11px; font-weight:800; padding:2px 8px; border-radius:12px; border:1px solid #fde68a;">
+                ${savedEmails.length} ${savedEmails.length > 1 ? (isEn ? 'templates' : 'modèles') : (isEn ? 'template' : 'modèle')}
+              </span>
+            </div>
+            <p style="margin:4px 0 0 0; font-size:12px; color:#64748b;">
+              ${isEn 
+                ? 'Curate, save, and reload your best-performing commercial emails. 1-click restore to editor or instant copy to clipboard.' 
+                : 'Conservez et réutilisez vos meilleurs emails commerciaux. Restaurez n\'importe quel modèle dans l\'éditeur ou copiez le format riche en 1 clic.'}
+            </p>
+          </div>
+
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <input type="text" id="inp-filter-saved-emails" placeholder="${isEn ? 'Filter by pair or keyword...' : 'Filtrer par devise ou mot-clé...'}" style="padding:7px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; min-width:220px;" />
+            <button id="btn-open-save-modal-bottom" style="padding:8px 14px; background:#059669; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.08);">
+              💾 ${isEn ? 'Save Current Email' : 'Sauvegarder l\'email actuel'}
+            </button>
+          </div>
+        </div>
+
+        <!-- Cards Container -->
+        ${savedEmails.length === 0 ? `
+          <div style="text-align:center; padding:32px 16px; color:#64748b; font-size:13px; background:#f8fafc; border-radius:8px; border:1px dashed #cbd5e1;">
+            <span>📭</span> ${isEn ? 'No saved emails yet. Click "Save this Email" above to add your first template!' : 'Aucun email sauvegardé pour le moment. Cliquez sur "Sauvegarder ce mail" ci-dessus pour ajouter votre premier modèle !'}
+          </div>
+        ` : `
+          <div id="saved-emails-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(430px, 1fr)); gap:16px;">
+            ${savedEmails.map(item => {
+              const data = item.emailData || {};
+              const kfs = (data.keyFactors || []).filter(k => k.enabled);
+              const ues = (data.upcomingEvents || []).filter(u => u.enabled);
+              const itemLangEn = (data.lang === 'en');
+              
+              return `
+                <div class="saved-email-card" data-id="${item.id}" data-search="${(item.title + ' ' + (item.note || '') + ' ' + (data.pair || '') + ' ' + (data.lang || '')).toLowerCase()}" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:10px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.04); border-left:4px solid ${itemLangEn ? '#2563eb' : '#dc2626'}; display:flex; flex-direction:column; justify-content:space-between; transition:all 0.15s;">
+                  
+                  <div>
+                    <!-- Top Badge Bar -->
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; gap:8px;">
+                      <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                        <span style="font-size:11px; font-weight:800; background:#f1f5f9; color:#1e3a8a; padding:2px 7px; border-radius:4px; border:1px solid #cbd5e1;">
+                          💱 ${data.pair || 'EUR/USD'}
+                        </span>
+                        <span style="font-size:10.5px; font-weight:700; background:${itemLangEn ? '#eff6ff' : '#fee2e2'}; color:${itemLangEn ? '#1e40af' : '#991b1b'}; padding:2px 7px; border-radius:4px; border:1px solid ${itemLangEn ? '#bfdbfe' : '#fecaca'};">
+                          ${itemLangEn ? '🇬🇧 EN FX Forwards' : '🇫🇷 FR Couverture'}
+                        </span>
+                        <span style="font-size:10.5px; font-weight:700; background:${data.direction === 'défaveur' ? '#fef2f2' : '#f0fdf4'}; color:${data.direction === 'défaveur' ? '#dc2626' : '#16a34a'}; padding:2px 7px; border-radius:4px;">
+                          ${data.movePct || ''} (${data.direction === 'défaveur' ? (isEn ? 'against client' : 'défavorable') : (isEn ? 'in favour' : 'favorable')})
+                        </span>
+                      </div>
+                      <span style="font-size:11px; color:#94a3b8; white-space:nowrap;">
+                        📅 ${item.createdAt || ''}
+                      </span>
+                    </div>
+
+                    <!-- Title & Rename Button -->
+                    <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; gap:6px;">
+                      <h4 style="margin:0; font-size:13.5px; font-weight:800; color:#0f172a; line-height:1.35;">
+                        ${item.title}
+                      </h4>
+                      <button class="btn-rename-saved-email" data-id="${item.id}" style="background:none; border:none; color:#64748b; cursor:pointer; font-size:12px; padding:2px 4px;" title="${isEn ? 'Rename this model' : 'Renommer ce modèle'}">
+                        ✏️
+                      </button>
+                    </div>
+
+                    <!-- Optional Note / Memo -->
+                    ${item.note ? `
+                      <div style="font-size:11.5px; color:#334155; background:#f8fafc; border-left:3px solid #3b82f6; padding:6px 10px; border-radius:4px; margin-bottom:10px; line-height:1.4;">
+                        💡 <em>${item.note}</em>
+                      </div>
+                    ` : ''}
+
+                    <!-- Summary of drivers and catalysts -->
+                    <div style="font-size:11px; color:#64748b; background:#f8fafc; border:1px solid #f1f5f9; border-radius:6px; padding:8px 10px; margin-bottom:12px; line-height:1.45;">
+                      <div><strong>${isEn ? 'Key Drivers :' : 'Facteurs clés :'}</strong> ${kfs.length > 0 ? kfs.map(k=>k.title).slice(0, 2).join(' • ') + (kfs.length > 2 ? '...' : '') : (isEn ? 'None' : 'Aucun')}</div>
+                      <div style="margin-top:3px;"><strong>${isEn ? 'Upcoming Catalysts :' : 'Événements à venir :'}</strong> ${ues.length > 0 ? ues.map(u=>u.title).slice(0, 2).join(' • ') + (ues.length > 2 ? '...' : '') : (isEn ? 'None' : 'Aucun')}</div>
+                    </div>
+                  </div>
+
+                  <!-- Actions footer on card -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #f1f5f9; padding-top:10px; margin-top:4px; gap:8px;">
+                    <div style="display:flex; gap:6px;">
+                      <button class="btn-load-saved-email" data-id="${item.id}" style="padding:6px 12px; background:#1e3a8a; color:#ffffff; border:none; border-radius:5px; font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px;">
+                        ⚡ ${isEn ? 'Load in Editor' : 'Charger dans l\'éditeur'}
+                      </button>
+                      <button class="btn-copy-saved-direct" data-id="${item.id}" style="padding:6px 11px; background:#f0fdf4; border:1px solid #86efac; color:#15803d; border-radius:5px; font-size:11px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:4px;">
+                        📋 ${isEn ? 'Copy Direct' : 'Copier direct'}
+                      </button>
+                    </div>
+                    <button class="btn-delete-saved-email" data-id="${item.id}" style="padding:5px 8px; background:#fff1f2; border:1px solid #fecdd3; color:#e11d48; border-radius:5px; font-size:11px; font-weight:600; cursor:pointer;" title="${isEn ? 'Delete this template' : 'Supprimer ce modèle'}">
+                      🗑️
+                    </button>
+                  </div>
+
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `}
+      </div>
+    `;
+  }
+
+  function renderSaveEmailModal(isEn) {
+    const e = state.email;
+    const defaultTitle = `${e.pair} - ${e.movePct} (${isEn ? 'EN FX Forwards' : 'FR'}) - ${new Date().toLocaleDateString('fr-FR')}`;
+    
+    return `
+      <!-- Modal Overlay: Save Current Email as Favorite / Template -->
+      <div id="modal-save-email-overlay" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.55); z-index:9999; align-items:center; justify-content:center; backdrop-filter:blur(3px);">
+        <div class="modal" style="width:100%; max-width:540px; background:#ffffff; border-radius:12px; box-shadow:0 20px 25px -5px rgba(0,0,0,0.25); border:1px solid #cbd5e1; overflow:hidden;">
+          
+          <div style="padding:16px 22px; border-bottom:1px solid #e2e8f0; display:flex; justify-content:space-between; align-items:center; background:#f8fafc;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:18px;">⭐</span>
+              <h3 style="margin:0; font-size:15px; font-weight:800; color:#0f172a;">
+                ${isEn ? 'Save Email as Template' : 'Sauvegarder l\'Email dans vos Favoris'}
+              </h3>
+            </div>
+            <button id="btn-close-save-modal" style="background:none; border:none; font-size:18px; color:#64748b; cursor:pointer; padding:2px 6px;">✕</button>
+          </div>
+          
+          <div style="padding:20px 22px;">
+            <div style="margin-bottom:14px;">
+              <label style="display:block; font-size:11px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:6px;">
+                ${isEn ? 'Template Name / Title' : 'Titre du Modèle'} *
+              </label>
+              <input type="text" id="save-modal-title" value="${defaultTitle}" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12.5px; font-weight:600; color:#0f172a;" />
+            </div>
+
+            <div style="margin-bottom:14px;">
+              <label style="display:block; font-size:11px; font-weight:700; color:#1e293b; text-transform:uppercase; margin-bottom:6px;">
+                ${isEn ? 'Internal Note / Client Context (optional)' : 'Note interne / Contexte client (optionnel)'}
+              </label>
+              <textarea id="save-modal-note" rows="2" placeholder="${isEn ? 'e.g. High response rate with corporate importers exposed to USD' : 'Ex : Taux de réponse élevé auprès des DAF importateurs exposés au Dollar'}" style="width:100%; padding:8px 12px; border:1px solid #cbd5e1; border-radius:6px; font-size:12px; color:#334155; font-family:inherit;"></textarea>
+            </div>
+
+            <!-- Quick Summary Card inside modal -->
+            <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; font-size:11.5px; color:#475569;">
+              <div style="font-weight:700; color:#1e3a8a; margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                <span>📋</span> ${isEn ? 'Saved configuration summary :' : 'Aperçu des paramètres sauvegardés :'}
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                <div>• <strong>${isEn ? 'Pair :' : 'Paire :'}</strong> ${e.pair}</div>
+                <div>• <strong>${isEn ? 'Language :' : 'Langue :'}</strong> ${isEn ? '🇬🇧 English (FX Forwards)' : '🇫🇷 Français'}</div>
+                <div>• <strong>${isEn ? 'Move :' : 'Mouvement :'}</strong> ${e.movePct} (${e.direction})</div>
+                <div>• <strong>${isEn ? 'Client :' : 'Client :'}</strong> ${e.clientName}</div>
+                <div>• <strong>${isEn ? 'Key Drivers :' : 'Facteurs clés :'}</strong> ${e.keyFactors.filter(k=>k.enabled).length} actifs</div>
+                <div>• <strong>${isEn ? 'Upcoming Events :' : 'Événements :'}</strong> ${e.upcomingEvents.filter(u=>u.enabled).length} actifs</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:12px 22px; border-top:1px solid #e2e8f0; background:#f8fafc; display:flex; justify-content:flex-end; gap:10px;">
+            <button id="btn-cancel-save-modal" style="padding:7px 14px; border:1px solid #cbd5e1; background:#ffffff; color:#475569; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer;">
+              ${isEn ? 'Cancel' : 'Annuler'}
+            </button>
+            <button id="btn-confirm-save-modal" style="padding:7px 16px; background:#059669; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+              💾 ${isEn ? 'Save Template' : 'Enregistrer le Modèle'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   // ─── Render Email Generator Sub-Tab ───
   function renderEmailGeneratorTab() {
     const e = state.email;
     const isEn = (e.lang === 'en');
     const { subject, htmlBody } = generateExactEmail();
+    const savedEmails = loadSavedEmails();
 
     // Check if any upcoming event has an expired date
     const hasExpiredUpcoming = e.upcomingEvents.some(u => isEventExpired(u.title));
@@ -1410,9 +1685,14 @@ Kevin Saudubray`;
                 ${isEn ? 'Adjust parameters or restore reference EUR/USD model.' : 'Ajustez pour n\'importe quelle devise ou restaurez le modèle EUR/USD.'}
               </p>
             </div>
-            <button id="btn-reset-email-model" style="padding:5px 9px; font-size:11px; font-weight:700; background:#f1f5f9; color:#1e3a8a; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;" title="${isEn ? 'Restore reference EUR/USD template with fresh November catalysts' : 'Rétablir le modèle EUR/USD de référence avec les catalyseurs de novembre'}">
-              ↺ ${isEn ? 'EUR/USD Reference (Nov)' : 'Modèle EUR/USD (Nov)'}
-            </button>
+            <div style="display:flex; gap:6px; align-items:center;">
+              <button id="btn-scroll-to-saved" style="padding:5px 9px; font-size:11px; font-weight:700; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:4px; cursor:pointer;" title="${isEn ? 'Jump to saved emails & templates' : 'Voir vos mails et modèles sauvegardés'}">
+                ⭐ ${isEn ? 'Saved' : 'Favoris'} (${savedEmails.length})
+              </button>
+              <button id="btn-reset-email-model" style="padding:5px 9px; font-size:11px; font-weight:700; background:#f1f5f9; color:#1e3a8a; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;" title="${isEn ? 'Restore reference EUR/USD template with fresh November catalysts' : 'Rétablir le modèle EUR/USD de référence avec les catalyseurs de novembre'}">
+                ↺ ${isEn ? 'EUR/USD Reference (Nov)' : 'Modèle EUR/USD (Nov)'}
+              </button>
+            </div>
           </div>
 
           <!-- Client Name & Pair Selector -->
@@ -1568,7 +1848,10 @@ Kevin Saudubray`;
                 ${isEn ? `Gmail / Outlook Preview (${e.pair} • English - FX Forwards)` : `Aperçu Format Gmail / Outlook (${e.pair} • Français)`}
               </span>
             </div>
-            <div style="display:flex; gap:8px;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <button id="btn-open-save-modal" style="padding:8px 14px; background:#059669; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                ⭐ ${isEn ? 'Save this Email' : 'Sauvegarder ce mail'}
+              </button>
               <button id="btn-copy-gmail-html" style="padding:8px 14px; background:#1e3a8a; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
                 📋 ${isEn ? 'Copy for Gmail / Outlook (Rich Format)' : 'Copier pour Gmail / Outlook (Format Riche)'}
               </button>
@@ -1630,6 +1913,12 @@ Kevin Saudubray`;
         </div>
 
       </div>
+
+      <!-- Bottom Saved Emails Section -->
+      ${renderSavedEmailsSection(savedEmails, isEn)}
+
+      <!-- Modal to Save Email -->
+      ${renderSaveEmailModal(isEn)}
     `;
   }
 
@@ -2272,6 +2561,193 @@ Kevin Saudubray`;
         }
         if (window.App && window.App.showToast) {
           window.App.showToast(isEn ? 'Plain text copied !' : 'Texte brut copié !', 'success');
+        }
+      });
+    });
+
+    // ─── SAVED COMMERCIAL EMAILS EVENT HANDLERS ───
+    const openSaveModal = () => {
+      const modal = document.getElementById('modal-save-email-overlay');
+      if (modal) {
+        modal.style.display = 'flex';
+        const titleInp = document.getElementById('save-modal-title');
+        if (titleInp) {
+          const isEn = (state.email.lang === 'en');
+          titleInp.value = `${state.email.pair} - ${state.email.movePct} (${isEn ? 'EN FX Forwards' : 'FR'}) - ${new Date().toLocaleDateString('fr-FR')}`;
+          setTimeout(() => {
+            titleInp.focus();
+            titleInp.select();
+          }, 50);
+        }
+      }
+    };
+
+    const closeSaveModal = () => {
+      const modal = document.getElementById('modal-save-email-overlay');
+      if (modal) modal.style.display = 'none';
+    };
+
+    document.getElementById('btn-open-save-modal')?.addEventListener('click', openSaveModal);
+    document.getElementById('btn-open-save-modal-bottom')?.addEventListener('click', openSaveModal);
+    document.getElementById('btn-close-save-modal')?.addEventListener('click', closeSaveModal);
+    document.getElementById('btn-cancel-save-modal')?.addEventListener('click', closeSaveModal);
+
+    document.getElementById('modal-save-email-overlay')?.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'modal-save-email-overlay') {
+        closeSaveModal();
+      }
+    });
+
+    document.getElementById('btn-confirm-save-modal')?.addEventListener('click', () => {
+      const titleInp = document.getElementById('save-modal-title');
+      const noteInp = document.getElementById('save-modal-note');
+      const title = (titleInp && titleInp.value.trim()) 
+        ? titleInp.value.trim() 
+        : `${state.email.pair} - ${state.email.movePct}`;
+      const note = noteInp ? noteInp.value.trim() : '';
+
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+      const newEntry = {
+        id: 'saved_mail_' + Date.now(),
+        title: title,
+        note: note,
+        createdAt: `${dateStr} à ${timeStr}`,
+        timestamp: Date.now(),
+        emailData: JSON.parse(JSON.stringify(state.email))
+      };
+
+      const list = loadSavedEmails();
+      list.unshift(newEntry);
+      persistSavedEmails(list);
+
+      closeSaveModal();
+      render();
+
+      setTimeout(() => {
+        document.getElementById('saved-emails-section')?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+
+      if (window.App && window.App.showToast) {
+        window.App.showToast(`Modèle "${title}" sauvegardé dans vos favoris !`, 'success');
+      }
+    });
+
+    // Jump / scroll to saved emails section
+    document.getElementById('btn-scroll-to-saved')?.addEventListener('click', () => {
+      document.getElementById('saved-emails-section')?.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Load saved email into editor & live preview
+    document.querySelectorAll('.btn-load-saved-email').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const list = loadSavedEmails();
+        const found = list.find(x => x.id === id);
+        if (!found || !found.emailData) return;
+
+        state.email = JSON.parse(JSON.stringify(found.emailData));
+        render();
+
+        setTimeout(() => {
+          document.getElementById('news-feed-root')?.scrollIntoView({ behavior: 'smooth' });
+        }, 50);
+
+        if (window.App && window.App.showToast) {
+          window.App.showToast(`Modèle "${found.title}" chargé dans l'éditeur et l'aperçu !`, 'success');
+        }
+      });
+    });
+
+    // Copy direct from saved card (instant rich HTML to clipboard)
+    document.querySelectorAll('.btn-copy-saved-direct').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        const list = loadSavedEmails();
+        const found = list.find(x => x.id === id);
+        if (!found || !found.emailData) return;
+
+        const { htmlBody, plainText, isEn } = generateExactEmail(found.emailData);
+        try {
+          if (navigator.clipboard && window.ClipboardItem) {
+            const blobHtml = new Blob([htmlBody], { type: 'text/html' });
+            const blobText = new Blob([plainText], { type: 'text/plain' });
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'text/html': blobHtml, 'text/plain': blobText })
+            ]);
+          } else {
+            await navigator.clipboard.writeText(plainText);
+          }
+          btn.innerHTML = isEn ? '✓ Copied !' : '✓ Copié !';
+          btn.style.background = '#dcfce7';
+          setTimeout(() => {
+            btn.innerHTML = `📋 ${isEn ? 'Copy Direct' : 'Copier direct'}`;
+            btn.style.background = '#f0fdf4';
+          }, 2000);
+
+          if (window.App && window.App.showToast) {
+            window.App.showToast(`Email "${found.title}" copié en format riche pour Gmail / Outlook !`, 'success');
+          }
+        } catch (e) {
+          navigator.clipboard.writeText(plainText).then(() => {
+            if (window.App && window.App.showToast) {
+              window.App.showToast(`Email "${found.title}" copié en texte brut !`, 'info');
+            }
+          });
+        }
+      });
+    });
+
+    // Rename saved email
+    document.querySelectorAll('.btn-rename-saved-email').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const list = loadSavedEmails();
+        const found = list.find(x => x.id === id);
+        if (!found) return;
+
+        const newTitle = prompt('Nouveau nom pour ce modèle d\'email :', found.title);
+        if (newTitle && newTitle.trim()) {
+          found.title = newTitle.trim();
+          persistSavedEmails(list);
+          render();
+          if (window.App && window.App.showToast) {
+            window.App.showToast('Modèle renommé avec succès !', 'success');
+          }
+        }
+      });
+    });
+
+    // Delete saved email
+    document.querySelectorAll('.btn-delete-saved-email').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const list = loadSavedEmails();
+        const found = list.find(x => x.id === id);
+        if (!found) return;
+
+        if (confirm(`Supprimer définitivement le modèle "${found.title}" ?`)) {
+          const updated = list.filter(x => x.id !== id);
+          persistSavedEmails(updated);
+          render();
+          if (window.App && window.App.showToast) {
+            window.App.showToast('Modèle supprimé des favoris.', 'info');
+          }
+        }
+      });
+    });
+
+    // Filter saved emails input (instant live search across cards)
+    document.getElementById('inp-filter-saved-emails')?.addEventListener('input', (e) => {
+      const q = (e.target.value || '').toLowerCase().trim();
+      document.querySelectorAll('.saved-email-card').forEach(card => {
+        const searchData = card.dataset.search || '';
+        if (!q || searchData.includes(q)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
         }
       });
     });
