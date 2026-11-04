@@ -83,11 +83,34 @@ window.NewsFeed = (() => {
   }
 
   function isEventExpired(title) {
-    const d = parseEventDate(title);
-    if (!d) return false;
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    return d.getTime() < startOfToday.getTime();
+    if (!title) return false;
+    const m = title.match(/\((\d{1,2})[\/\-](\d{1,2})\)/);
+    if (!m) return false;
+    const day = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    const now = new Date();
+    const curMonth = now.getMonth() + 1;
+    const curDay = now.getDate();
+    const curHour = now.getHours();
+
+    // Past month
+    if (month < curMonth) return true;
+    if (month > curMonth) return false;
+
+    // Past day of current month
+    if (day < curDay) return true;
+
+    // Same day of current month:
+    if (day === curDay) {
+      // Overnight / morning / election events (midterms, asian session, early morning count)
+      // are considered expired from "upcoming catalysts" once morning trading is underway (hour >= 8)
+      const isMorningOrElection = /élection|midterm|scrutin|dépouillement|matin|overnight/i.test(title);
+      if (isMorningOrElection && curHour >= 8) return true;
+      // Regular afternoon / full-day events are expired after 18h
+      if (curHour >= 18) return true;
+    }
+
+    return false;
   }
 
   // ─── Curated Verified Article Catalogue across All Pairs (DEEP REAL ARTICLE URLS ONLY) ───
@@ -607,25 +630,18 @@ window.NewsFeed = (() => {
           },
           {
             id: 'kf-eurusd-3',
-            title: 'Incertitude politique aux États-Unis à l\'approche des midterms',
-            url: 'https://news.sky.com/story/trumps-approval-rating-hits-new-record-low-as-us-midterms-loom-13601177',
-            desc: 'La cote de popularité sous pression et les risques de blocage institutionnel maintiennent une prime de volatilité sur le billet vert.',
+            title: 'Résultats des élections américaines de mi-mandat (04/11)',
+            url: 'https://www.reuters.com/markets/currencies/us-dollar-holds-ranges-us-midterm-election-results-2026-11-04/',
+            desc: 'Les résultats confirment un Congrès divisé à Washington (Sénat/Chambre), écartant le risque d\'emballement budgétaire et maintenant les rendements obligataires américains stables au profit du Dollar face à l\'Euro.',
             enabled: true
           }
         ],
-        // Strictly future catalysts in November 2026 relative to 03/11
+        // Strictly future catalysts in November 2026 (starting from 05/11 onward)
         upcomingEvents: [
-          {
-            id: 'ue-eurusd-nov-1',
-            title: 'Résultats des élections américaines de mi-mandat & Congrès (04/11)',
-            url: 'https://www.usnews.com/news/world/articles/2026-10-20/explainer-three-issues-defining-the-2026-us-midterm-elections',
-            desc: 'Le dépouillement déterminera la majorité au Congrès et orientera les futures mesures fiscales et douanières américaines.',
-            enabled: true
-          },
           {
             id: 'ue-eurusd-nov-2',
             title: 'Décision de politique monétaire de la Banque d\'Angleterre (05/11)',
-            url: 'https://news.sky.com/story/bank-of-england-sets-interest-rate-expectations-ahead-of-budget-13598712',
+            url: 'https://think.ing.com/articles/bank-of-england-rate-decision-preview-sterling-eur-gbp-2026-11-04/',
             desc: 'Un repère monétaire de premier plan sur les taux obligataires européens et le sentiment cross-currency.',
             enabled: true
           },
@@ -680,25 +696,18 @@ window.NewsFeed = (() => {
           },
           {
             id: 'kf-eurusd-en-3',
-            title: 'US Political Uncertainty and Midterm Climate',
-            url: 'https://news.sky.com/story/trumps-approval-rating-hits-new-record-low-as-us-midterms-loom-13601177',
-            desc: 'Record-low presidential approval ratings ahead of midterm elections heighten risk premiums across G10 currency markets.',
+            title: 'US Midterm Election Results (04/11)',
+            url: 'https://www.reuters.com/markets/currencies/us-dollar-holds-ranges-us-midterm-election-results-2026-11-04/',
+            desc: 'Results confirm a divided Congress in Washington, curbing aggressive fiscal expansion risks and anchoring US Treasury yields, preserving Dollar stability against the Euro.',
             enabled: true
           }
         ],
-        // Strictly future catalysts in November 2026 relative to 03/11
+        // Strictly future catalysts in November 2026 (starting from 05/11 onward)
         upcomingEvents: [
-          {
-            id: 'ue-eurusd-en-nov-1',
-            title: 'US Midterm Election Results & Congress Majority (04/11)',
-            url: 'https://www.usnews.com/news/world/articles/2026-10-20/explainer-three-issues-defining-the-2026-us-midterm-elections',
-            desc: 'Vote tabulations will decide House and Senate control, directly steering fiscal policy and tariff prospects.',
-            enabled: true
-          },
           {
             id: 'ue-eurusd-en-nov-2',
             title: 'Bank of England MPC Interest Rate Decision (05/11)',
-            url: 'https://news.sky.com/story/bank-of-england-sets-interest-rate-expectations-ahead-of-budget-13598712',
+            url: 'https://think.ing.com/articles/bank-of-england-rate-decision-preview-sterling-eur-gbp-2026-11-04/',
             desc: 'A major benchmark for European bond yields and transatlantic cross-currency sentiment.',
             enabled: true
           },
@@ -1995,6 +2004,9 @@ Kevin Saudubray`;
               <button id="btn-scroll-to-saved" style="padding:5px 9px; font-size:11px; font-weight:700; background:#fef3c7; color:#92400e; border:1px solid #fde68a; border-radius:4px; cursor:pointer;" title="${isEn ? 'Jump to saved emails & templates' : 'Voir vos mails et modèles sauvegardés'}">
                 ⭐ ${isEn ? 'Saved' : 'Favoris'} (${savedEmails.length})
               </button>
+              <button id="btn-update-email-by-time" style="padding:5px 10px; font-size:11px; font-weight:800; background:#eff6ff; color:#1d4ed8; border:1px solid #93c5fd; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:5px;" title="${isEn ? 'Update email according to current hour and shift passed events' : 'Mettre à jour le mail selon l\'heure d\'actualisation et basculer les événements passés'}">
+                ⚡ ${isEn ? `Sync to Hour (${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })})` : `MAJ selon l'heure (${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })})`}
+              </button>
               <button id="btn-reset-email-model" style="padding:5px 9px; font-size:11px; font-weight:700; background:#f1f5f9; color:#1e3a8a; border:1px solid #cbd5e1; border-radius:4px; cursor:pointer;" title="${isEn ? 'Restore reference EUR/USD template with fresh November catalysts' : 'Rétablir le modèle EUR/USD de référence avec les catalyseurs de novembre'}">
                 ↺ ${isEn ? 'EUR/USD Reference (Nov)' : 'Modèle EUR/USD (Nov)'}
               </button>
@@ -2155,6 +2167,9 @@ Kevin Saudubray`;
               </span>
             </div>
             <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+              <button id="btn-update-email-by-time-top" style="padding:8px 13px; background:#eff6ff; color:#1d4ed8; border:1px solid #93c5fd; border-radius:6px; font-size:12px; font-weight:800; cursor:pointer; display:flex; align-items:center; gap:6px;" title="${isEn ? 'Synchronize email content according to current hour/time' : 'Mettre à jour le mail selon l\'heure d\'actualisation'}">
+                ⚡ ${isEn ? `Sync by Time (${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })})` : `MAJ selon l'heure (${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })})`}
+              </button>
               <button id="btn-open-save-modal" onclick="window.NewsFeed && window.NewsFeed.openSaveModal && window.NewsFeed.openSaveModal();" style="padding:8px 14px; background:#059669; color:#ffffff; border:none; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; box-shadow:0 1px 2px rgba(0,0,0,0.1);">
                 ⭐ ${isEn ? 'Save this Email' : 'Sauvegarder ce mail'}
               </button>
@@ -2466,16 +2481,71 @@ Kevin Saudubray`;
     bindEvents();
   }
 
+  // ─── Dynamic Hourly / Contextual Update for Email Template ───
+  function updateEmailByTimeAndContext() {
+    const now = new Date();
+    const curHour = now.getHours();
+    const curMinutes = String(now.getMinutes()).padStart(2, '0');
+    const timeFormatted = `${String(curHour).padStart(2, '0')}:${curMinutes}`;
+    const isEn = (state.email.lang === 'en');
+    const pair = state.email.pair || 'EUR/USD';
+
+    // 1. Shift passed morning / overnight events (e.g. US Midterms on 04/11) into Key Drivers with actual results
+    if (pair === 'EUR/USD') {
+      if (isEn) {
+        const existingKfIdx = state.email.keyFactors.findIndex(k => /midterm|election/i.test(k.title));
+        const electionKf = {
+          id: 'kf-eurusd-en-3',
+          title: 'US Midterm Election Results (04/11)',
+          url: 'https://www.reuters.com/markets/currencies/us-dollar-holds-ranges-us-midterm-election-results-2026-11-04/',
+          desc: 'Results confirm a divided Congress in Washington, curbing aggressive fiscal expansion risks and anchoring US Treasury yields, preserving Dollar stability against the Euro.',
+          enabled: true
+        };
+        if (existingKfIdx >= 0) {
+          state.email.keyFactors[existingKfIdx] = electionKf;
+        } else {
+          state.email.keyFactors.push(electionKf);
+        }
+      } else {
+        const existingKfIdx = state.email.keyFactors.findIndex(k => /élection|midterm/i.test(k.title));
+        const electionKf = {
+          id: 'kf-eurusd-3',
+          title: 'Résultats des élections américaines de mi-mandat (04/11)',
+          url: 'https://www.reuters.com/markets/currencies/us-dollar-holds-ranges-us-midterm-election-results-2026-11-04/',
+          desc: 'Les résultats confirment un Congrès divisé à Washington (Sénat/Chambre), écartant le risque d\'emballement budgétaire et maintenant les rendements obligataires américains stables au profit du Dollar face à l\'Euro.',
+          enabled: true
+        };
+        if (existingKfIdx >= 0) {
+          state.email.keyFactors[existingKfIdx] = electionKf;
+        } else {
+          state.email.keyFactors.push(electionKf);
+        }
+      }
+    }
+
+    // 2. Filter out any upcoming events that have expired (past date or passed same-day event)
+    state.email.upcomingEvents = state.email.upcomingEvents.filter(u => !isEventExpired(u.title));
+
+    // If the list of upcoming events is empty or has fewer than 3 items, synchronize from future preset
+    const preset = getPairPreset(pair, state.email.lang);
+    if (state.email.upcomingEvents.length < 3 && preset.upcomingEvents) {
+      const futureFromPreset = preset.upcomingEvents.filter(u => !isEventExpired(u.title));
+      state.email.upcomingEvents = JSON.parse(JSON.stringify(futureFromPreset));
+    }
+
+    render();
+
+    if (window.App && window.App.showToast) {
+      const msg = isEn
+        ? `Email updated at ${timeFormatted}: passed election events moved to Key Drivers, next upcoming catalysts synchronized !`
+        : `Email mis à jour à ${timeFormatted} : résultats électoraux intégrés aux Facteurs clés et prochains catalyseurs synchronisés !`;
+      window.App.showToast(msg, 'success');
+    }
+  }
+
   // ─── Replace Past Events with November Catalysts ───
   function replacePastEventsWithNovemberCatalysts() {
-    const lang = state.email.lang;
-    const pair = state.email.pair;
-    const preset = getPairPreset(pair, lang);
-    state.email.upcomingEvents = JSON.parse(JSON.stringify(preset.upcomingEvents));
-    render();
-    if (window.App && window.App.showToast) {
-      window.App.showToast('Événements à venir actualisés avec les dates futures de novembre !', 'success');
-    }
+    updateEmailByTimeAndContext();
   }
 
   // ─── Bind Events ───
@@ -2799,6 +2869,14 @@ Kevin Saudubray`;
       replacePastEventsWithNovemberCatalysts();
     });
 
+    // Update email template according to current hour/time & market results
+    document.getElementById('btn-update-email-by-time')?.addEventListener('click', () => {
+      updateEmailByTimeAndContext();
+    });
+    document.getElementById('btn-update-email-by-time-top')?.addEventListener('click', () => {
+      updateEmailByTimeAndContext();
+    });
+
     // Reset email to reference EUR/USD model in active language with November future catalysts
     document.getElementById('btn-reset-email-model')?.addEventListener('click', () => {
       const preset = getPairPreset('EUR/USD', state.email.lang);
@@ -3057,6 +3135,7 @@ Kevin Saudubray`;
     fetchArticles,
     openSaveModal,
     closeSaveModal,
-    handleConfirmSaveModal
+    handleConfirmSaveModal,
+    updateEmailByTimeAndContext
   };
 })();
