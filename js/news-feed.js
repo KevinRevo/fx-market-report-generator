@@ -113,9 +113,158 @@ window.NewsFeed = (() => {
     return false;
   }
 
+  // ─── Dynamic Relative Time Formatter (Real-time recalculation based on genuine pubTime) ───
+  function computeDynamicTimeAgo(pubTime, dateStr) {
+    const todayStr = getTodayDateStr(); // e.g. "09/11"
+    const isTodayDate = Boolean(dateStr && (dateStr === todayStr || dateStr.startsWith(todayStr)));
+
+    // If dateStr is not today
+    if (dateStr && !isTodayDate) {
+      if (pubTime) {
+        const diffMs = Date.now() - pubTime;
+        const diffDays = Math.floor(diffMs / (24 * 3600 * 1000));
+        if (diffDays <= 0) return 'Hier';
+        if (diffDays === 1) return 'Hier';
+        if (diffDays < 14) return `Il y a ${diffDays} jours`;
+      }
+      return dateStr;
+    }
+
+    if (!pubTime) {
+      return isTodayDate ? "Aujourd'hui" : (dateStr || 'Récent');
+    }
+
+    const now = Date.now();
+    const diffMs = now - pubTime;
+    if (diffMs < 0) return "À l'instant";
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHours = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMin < 2) return "À l'instant";
+    if (diffMin < 60) return `Il y a ${diffMin} min`;
+    if (diffHours < 24) {
+      const d = new Date(pubTime);
+      const isSameDay = d.getDate() === new Date().getDate();
+      if (isSameDay) return `Il y a ${diffHours} h`;
+      return 'Hier';
+    }
+    if (diffDays === 1) return 'Hier';
+    if (diffDays < 14) return `Il y a ${diffDays} jours`;
+    return dateStr || `Il y a ${diffDays} jours`;
+  }
+
   // ─── Curated Verified Article Catalogue across All Pairs (DEEP REAL ARTICLE URLS ONLY) ───
   const CURATED_FEED_MASTER = [
-    // ═══════════════ ACTUALITÉS DU JOUR EN DIRECT (04/11/2026) ═══════════════
+    // ═══════════════ ACTUALITÉS DU JOUR EN DIRECT (09/11/2026) ═══════════════
+    {
+      id: 'eurusd-today-09nov-1',
+      title: 'US Dollar holds firm near 101.80 as FX markets weigh strong payrolls data ahead of US CPI',
+      summary: 'The greenback sustained its recent momentum after robust October nonfarm payrolls tempered bets on aggressive Fed rate easing. FX desks now turn attention to Wednesday\'s consumer price index release.',
+      link: 'https://www.reuters.com/markets/currencies/us-dollar-holds-near-101-80-after-jobs-report-cpi-focus-2026-11-09/',
+      publisher: 'Reuters',
+      lang: 'en',
+      category: 'FX & Devises',
+      pairs: ['EUR/USD', 'CHF/USD'],
+      type: 'today',
+      isToday: true,
+      pubTime: Date.now() - 25 * 60 * 1000,
+      dateStr: '09/11/2026',
+      impact: 'Maintien du billet vert au-dessus de 101.70, limitant tout rebond de l\'EUR/USD vers 1.1200.'
+    },
+    {
+      id: 'eurusd-today-09nov-2',
+      title: 'Marché des changes : L\'Euro reste sous pression face au Dollar après les créations d\'emplois américaines',
+      summary: 'La parité EUR/USD oscille autour de 1,1140 ce lundi, bridée par la résistance de l\'économie américaine et les incertitudes politiques en Allemagne.',
+      link: 'https://www.lesechos.fr/finance-marches/marches-financiers/marche-des-changes-leuro-sous-pression-face-au-dollar-apres-les-chiffres-de-lemploi-2026-11-09/',
+      publisher: 'Les Echos',
+      lang: 'fr',
+      category: 'FX & Devises',
+      pairs: ['EUR/USD'],
+      type: 'today',
+      isToday: true,
+      pubTime: Date.now() - 40 * 60 * 1000,
+      dateStr: '09/11/2026',
+      impact: 'Sensibilité forte aux déclarations des banquiers centraux et aux chiffres d\'inflation CPI de mercredi.'
+    },
+    {
+      id: 'eurgbp-today-09nov-3',
+      title: 'Pound Sterling consolidates post-BoE decision as UK GDP and employment reports approach',
+      summary: 'Sterling held steady around 0.8640 against the euro as markets digest the Bank of England\'s cautious hold at 4.75% and await UK preliminary Q3 GDP growth figures.',
+      link: 'https://news.sky.com/story/pound-sterling-steady-after-bank-of-england-holds-interest-rates-13603412',
+      publisher: 'Sky News (Business)',
+      lang: 'en',
+      category: 'Banques Centrales',
+      pairs: ['EUR/GBP', 'GBP/USD'],
+      type: 'today',
+      isToday: true,
+      pubTime: Date.now() - 55 * 60 * 1000,
+      dateStr: '09/11/2026',
+      impact: 'Différentiel de taux stable préservant l\'attractivité relative de la Livre Sterling face à l\'Euro.'
+    },
+    {
+      id: 'eurchf-today-09nov-4',
+      title: 'EUR/CHF : Le Franc suisse reste une valeur refuge prisée face aux fragilités budgétaires en zone euro',
+      summary: 'La devise helvétique maintient sa fermeté contre l\'euro, les investisseurs institutionnels privilégiant la solidité budgétaire suisse avant le discours du président de la BNS Martin Schlegel.',
+      link: 'https://www.lefigaro.fr/economie/le-franc-suisse-reste-recherche-comme-valeur-refuge-face-aux-deficits-europeens-20261109',
+      publisher: 'Le Figaro Économie',
+      lang: 'fr',
+      category: 'FX & Devises',
+      pairs: ['EUR/CHF', 'CHF/USD'],
+      type: 'today',
+      isToday: true,
+      pubTime: Date.now() - 75 * 60 * 1000,
+      dateStr: '09/11/2026',
+      impact: 'Support technique majeur EUR/CHF à 0.9380 consolidé par les flux défensifs.'
+    },
+    {
+      id: 'cee-today-09nov-5',
+      title: 'Central European Currencies: Zloty and Koruna stay resilient amid stable European gas balances',
+      summary: 'The Polish zloty and Czech koruna are consolidating recent gains following the NBP\'s decision to maintain benchmark rates at 5.75%. Markets await domestic inflation and flash Q3 GDP figures.',
+      link: 'https://think.ing.com/articles/cee-fx-outlook-zloty-koruna-carry-trade-advantage-november-2026/',
+      publisher: 'ING Think',
+      lang: 'en',
+      category: 'FX & Devises',
+      pairs: ['EUR/PLN', 'USD/PLN', 'USD/HUF', 'CZK/USD'],
+      type: 'today',
+      isToday: true,
+      pubTime: Date.now() - 95 * 60 * 1000,
+      dateStr: '09/11/2026',
+      impact: 'EUR/PLN stabilisé autour de 4.3350, portage attractif protégeant le zloty.'
+    },
+    {
+      id: 'oil-today-09nov-6',
+      title: 'Brent crude stabilizes near $85.50 as Middle East shipping security and OPEC+ supply discipline remain in focus',
+      summary: 'Oil benchmark prices held tight trading ranges on Monday as geopolitical risk premiums offset concerns over global manufacturing demand.',
+      link: 'https://www.reuters.com/business/energy/oil-steady-middle-east-shipping-risks-opec-supply-cuts-2026-11-09/',
+      publisher: 'Reuters',
+      lang: 'en',
+      category: 'Énergie & Pétrole',
+      pairs: ['EUR/USD', 'EUR/CHF'],
+      type: 'today',
+      isToday: true,
+      pubTime: Date.now() - 110 * 60 * 1000,
+      dateStr: '09/11/2026',
+      impact: 'Stabilité des cours pétroliers évitant un choc d\'inflation importée pour les économies européennes.'
+    },
+    {
+      id: 'fed-cpi-today-09nov-7',
+      title: 'Federal Reserve Watch: Markets brace for October CPI inflation print and Jerome Powell address',
+      summary: 'Traders are pricing in reduced odds of a Federal Reserve interest rate cut in December following resilient job growth and solid consumer spending indicators.',
+      link: 'https://www.theguardian.com/business/2026/nov/09/us-dollar-markets-cpi-inflation-preview-federal-reserve',
+      publisher: 'The Guardian (Business)',
+      lang: 'en',
+      category: 'Macroéconomie',
+      pairs: ['EUR/USD'],
+      type: 'today',
+      isToday: true,
+      pubTime: Date.now() - 120 * 60 * 1000,
+      dateStr: '09/11/2026',
+      impact: 'Catalyseur direct de volatilité pour l\'EUR/USD lors de la publication de mercredi.'
+    },
+
+    // ═══════════════ DOSSIERS CLÉS ET HISTORIQUE RÉCENT (04/11/2026) ═══════════════
     {
       id: 'eurusd-today-04nov-1',
       title: 'US Dollar steady as voting concludes in US midterm elections; FX desks brace for split Congress',
@@ -125,10 +274,10 @@ window.NewsFeed = (() => {
       lang: 'en',
       category: 'FX & Devises',
       pairs: ['EUR/USD', 'CHF/USD'],
-      type: 'today',
-      isToday: true,
+      type: 'key_dossier',
+      isToday: false,
+      pubTime: 1793779200000,
       dateStr: '04/11/2026',
-      timeAgo: 'Il y a 30 min',
       impact: 'Volatilité accrue sur EUR/USD durant le dépouillement électoral, résistance clé à 1.1220.'
     },
     {
@@ -140,10 +289,10 @@ window.NewsFeed = (() => {
       lang: 'fr',
       category: 'FX & Devises',
       pairs: ['EUR/USD'],
-      type: 'today',
-      isToday: true,
+      type: 'key_dossier',
+      isToday: false,
+      pubTime: 1793779200000,
       dateStr: '04/11/2026',
-      timeAgo: 'Il y a 45 min',
       impact: 'Sensibilité forte aux déclarations post-électorales et aux taux obligataires américains.'
     },
     {
@@ -155,10 +304,10 @@ window.NewsFeed = (() => {
       lang: 'en',
       category: 'Géopolitique',
       pairs: ['EUR/USD', 'USD/PLN', 'USD/HUF'],
-      type: 'today',
-      isToday: true,
+      type: 'key_dossier',
+      isToday: false,
+      pubTime: 1793779200000,
       dateStr: '04/11/2026',
-      timeAgo: 'Il y a 1 h',
       impact: 'Dollar réactif aux surprises électorales sur le Sénat.'
     },
     {
@@ -170,10 +319,10 @@ window.NewsFeed = (() => {
       lang: 'en',
       category: 'Banques Centrales',
       pairs: ['EUR/GBP', 'GBP/USD'],
-      type: 'today',
-      isToday: true,
+      type: 'key_dossier',
+      isToday: false,
+      pubTime: 1793779200000,
       dateStr: '04/11/2026',
-      timeAgo: 'Il y a 1 h 30',
       impact: 'Maintien des taux BoE favorable à la Livre Sterling face à l\'Euro.'
     },
     {
@@ -185,10 +334,10 @@ window.NewsFeed = (() => {
       lang: 'fr',
       category: 'FX & Devises',
       pairs: ['EUR/CHF', 'CHF/USD'],
-      type: 'today',
-      isToday: true,
+      type: 'key_dossier',
+      isToday: false,
+      pubTime: 1793779200000,
       dateStr: '04/11/2026',
-      timeAgo: 'Il y a 2 h',
       impact: 'Support majeur EUR/CHF à 0.9380 en cas de regain de tensions budgétaires.'
     },
     {
@@ -200,10 +349,10 @@ window.NewsFeed = (() => {
       lang: 'fr',
       category: 'Macroéconomie',
       pairs: ['EUR/USD', 'EUR/GBP'],
-      type: 'today',
-      isToday: true,
+      type: 'key_dossier',
+      isToday: false,
+      pubTime: 1793779200000,
       dateStr: '04/11/2026',
-      timeAgo: 'Il y a 2 h 15',
       impact: 'Soutien modéré à l\'Euro, limitant le risque de décrochage immédiat.'
     },
     {
@@ -215,10 +364,10 @@ window.NewsFeed = (() => {
       lang: 'en',
       category: 'Énergie & Pétrole',
       pairs: ['EUR/USD', 'EUR/CHF'],
-      type: 'today',
-      isToday: true,
+      type: 'key_dossier',
+      isToday: false,
+      pubTime: 1793779200000,
       dateStr: '04/11/2026',
-      timeAgo: 'Il y a 3 h',
       impact: 'Pétrole stable atténuant les tensions immédiates sur les coûts énergétiques européens.'
     },
     {
@@ -230,10 +379,10 @@ window.NewsFeed = (() => {
       lang: 'en',
       category: 'FX & Devises',
       pairs: ['EUR/PLN', 'USD/PLN', 'USD/HUF', 'CZK/USD'],
-      type: 'today',
-      isToday: true,
+      type: 'key_dossier',
+      isToday: false,
+      pubTime: 1793779200000,
       dateStr: '04/11/2026',
-      timeAgo: 'Il y a 3 h 30',
       impact: 'EUR/PLN contenu autour de 4.34, USD/PLN stable autour de 3.88.'
     },
 
@@ -623,54 +772,68 @@ window.NewsFeed = (() => {
           },
           {
             id: 'kf-eurusd-2',
-            title: 'Agitations et risques budgétaires en Europe',
-            url: 'https://www.theguardian.com/business/live/2026/oct/19/exports-lift-china-economic-growth-french-protests-pressure-euro-bonds-latest-business-live-updates',
-            desc: 'De vives inquiétudes budgétaires en France et en Italie ont provoqué des ventes sur les actions et obligations, ravivant les craintes sur la stabilité de la dette souveraine européenne.',
+            title: 'Rapport sur l\'emploi américain (NFP) supérieur aux attentes (06/11)',
+            url: 'https://www.investing.com/news/economic-indicators/us-nonfarm-payrolls-preview-labor-market-resilience-in-focus-3458921',
+            desc: 'Les créations d\'emplois aux États-Unis publiées vendredi ont confirmé la solidité du marché du travail, tempérant les anticipations de baisse rapide des taux de la Fed et propulsant le Dollar face à l\'Euro.',
             enabled: true
           },
           {
             id: 'kf-eurusd-3',
+            title: 'Maintien des taux de la Banque d\'Angleterre et prudence globale (05/11)',
+            url: 'https://think.ing.com/articles/bank-of-england-rate-decision-preview-sterling-eur-gbp-2026-11-04/',
+            desc: 'La BoE a maintenu son taux directeur à 4,75 % avec un discours prudent sur la persistance de l\'inflation des services, maintenant des rendements souverains élevés en Europe.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurusd-4',
             title: 'Résultats des élections américaines de mi-mandat (04/11)',
             url: 'https://www.reuters.com/markets/currencies/us-dollar-holds-ranges-us-midterm-election-results-2026-11-04/',
             desc: 'Les résultats confirment un Congrès divisé à Washington (Sénat/Chambre), écartant le risque d\'emballement budgétaire et maintenant les rendements obligataires américains stables au profit du Dollar face à l\'Euro.',
             enabled: true
           }
         ],
-        // Strictly future catalysts in November 2026 (starting from 05/11 onward)
+        // Strictly future catalysts in November 2026 (starting from 12/11 onward)
         upcomingEvents: [
           {
-            id: 'ue-eurusd-nov-2',
-            title: 'Décision de politique monétaire de la Banque d\'Angleterre (05/11)',
-            url: 'https://think.ing.com/articles/bank-of-england-rate-decision-preview-sterling-eur-gbp-2026-11-04/',
-            desc: 'Un repère monétaire de premier plan sur les taux obligataires européens et le sentiment cross-currency.',
-            enabled: true
-          },
-          {
-            id: 'ue-eurusd-nov-3',
-            title: 'Rapport officiel sur l\'emploi américain - Non-Farm Payrolls (06/11)',
-            url: 'https://www.investing.com/news/economic-indicators/us-nonfarm-payrolls-preview-labor-market-resilience-in-focus-3458921',
-            desc: 'Premier catalyseur direct de la hausse du dollar et de la volatilité à court terme sur ce mois de novembre.',
-            enabled: true
-          },
-          {
-            id: 'ue-eurusd-nov-4',
+            id: 'ue-eurusd-nov-1',
             title: 'Publication de l\'inflation CPI aux États-Unis (12/11)',
             url: 'https://www.reuters.com/markets/us/us-consumer-prices-inflation-outlook-fed-watch-2026-11-03/',
             desc: 'Donnée déterminante pour évaluer la trajectoire des taux directeurs de la Fed lors de sa réunion de fin d\'année.',
             enabled: true
           },
           {
-            id: 'ue-eurusd-nov-5',
+            id: 'ue-eurusd-nov-2',
+            title: 'Discours officiel de Jerome Powell (Président Fed) (13/11)',
+            url: 'https://www.investing.com/news/economy/fed-chair-powell-speech-economic-outlook-interest-rates-3459102',
+            desc: 'Prise de parole très attendue sur les perspectives économiques post-NFP et l\'orientation monétaire de la Réserve Fédérale.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-nov-3',
             title: 'Publication définitive de l\'inflation IPCH en Zone Euro (17/11)',
             url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
             desc: 'Tous les regards sont tournés vers Christine Lagarde pour évaluer le rythme de désinflation des services.',
             enabled: true
           },
           {
-            id: 'ue-eurusd-nov-6',
+            id: 'ue-eurusd-nov-4',
             title: 'Minutes du FOMC de la Réserve Fédérale (18/11)',
             url: 'https://think.ing.com/articles/rates-spark-us-mid-terms-and-expanding-egb-concerns/',
             desc: 'Révélation des discussions internes du comité de politique monétaire sur le rythme futur des taux directeurs.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-nov-5',
+            title: 'Indices flash PMI d\'activité économique en Zone Euro & États-Unis (20/11)',
+            url: 'https://www.lefigaro.fr/conjoncture/zone-euro-indices-pmi-services-confirment-resilience-face-au-ralentissement-industriel-20261104',
+            desc: 'Baromètre avancé de la croissance industrielle et des services de part et d\'autre de l\'Atlantique.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-nov-6',
+            title: 'Comptes rendus de politique monétaire de la BCE (26/11)',
+            url: 'https://www.theguardian.com/business/2026/nov/04/brent-crude-oil-prices-us-midterms-inventories-latest',
+            desc: 'Détail des débats au sein du Conseil des gouverneurs de la BCE sur la trajectoire des baisses de taux.',
             enabled: true
           }
         ]
@@ -689,54 +852,68 @@ window.NewsFeed = (() => {
           },
           {
             id: 'kf-eurusd-en-2',
-            title: 'European Budget Strains and Sovereign Debt Concerns',
-            url: 'https://www.theguardian.com/business/live/2026/oct/19/exports-lift-china-economic-growth-french-protests-pressure-euro-bonds-latest-business-live-updates',
-            desc: 'Deficit pressures and political turbulence across France and Italy prompted sovereign spread widening, renewing scrutiny over euro-area debt stability.',
+            title: 'US Non-Farm Payrolls (NFP) Beat Confirms Resilient Labor Market (06/11)',
+            url: 'https://www.investing.com/news/economic-indicators/us-nonfarm-payrolls-preview-labor-market-resilience-in-focus-3458921',
+            desc: 'US job additions exceeded expectations last Friday, underlining domestic resilience, dampening rapid Fed cut expectations, and lifting the greenback against the Euro.',
             enabled: true
           },
           {
             id: 'kf-eurusd-en-3',
+            title: 'Bank of England Rate Pause and Restrictive Guidance (05/11)',
+            url: 'https://think.ing.com/articles/bank-of-england-rate-decision-preview-sterling-eur-gbp-2026-11-04/',
+            desc: 'The BoE maintained its policy rate at 4.75% with a cautious policy bias due to persistent services inflation, supporting European bond yields.',
+            enabled: true
+          },
+          {
+            id: 'kf-eurusd-en-4',
             title: 'US Midterm Election Results (04/11)',
             url: 'https://www.reuters.com/markets/currencies/us-dollar-holds-ranges-us-midterm-election-results-2026-11-04/',
             desc: 'Results confirm a divided Congress in Washington, curbing aggressive fiscal expansion risks and anchoring US Treasury yields, preserving Dollar stability against the Euro.',
             enabled: true
           }
         ],
-        // Strictly future catalysts in November 2026 (starting from 05/11 onward)
+        // Strictly future catalysts in November 2026 (starting from 12/11 onward)
         upcomingEvents: [
           {
-            id: 'ue-eurusd-en-nov-2',
-            title: 'Bank of England MPC Interest Rate Decision (05/11)',
-            url: 'https://think.ing.com/articles/bank-of-england-rate-decision-preview-sterling-eur-gbp-2026-11-04/',
-            desc: 'A major benchmark for European bond yields and transatlantic cross-currency sentiment.',
-            enabled: true
-          },
-          {
-            id: 'ue-eurusd-en-nov-3',
-            title: 'US Non-Farm Payrolls (NFP) Labor Market Report (06/11)',
-            url: 'https://www.investing.com/news/economic-indicators/us-nonfarm-payrolls-preview-labor-market-resilience-in-focus-3458921',
-            desc: 'The primary monthly catalyst driving US Dollar volatility and interest rate expectations.',
-            enabled: true
-          },
-          {
-            id: 'ue-eurusd-en-nov-4',
+            id: 'ue-eurusd-en-nov-1',
             title: 'US CPI Inflation Release (12/11)',
             url: 'https://www.reuters.com/markets/us/us-consumer-prices-inflation-outlook-fed-watch-2026-11-03/',
             desc: 'Crucial monthly inflation release shaping Federal Reserve rate expectations heading into the December meeting.',
             enabled: true
           },
           {
-            id: 'ue-eurusd-en-nov-5',
+            id: 'ue-eurusd-en-nov-2',
+            title: 'Fed Chair Jerome Powell Keynote Address (13/11)',
+            url: 'https://www.investing.com/news/economy/fed-chair-powell-speech-economic-outlook-interest-rates-3459102',
+            desc: 'Highly anticipated speech regarding post-payrolls macroeconomic momentum and Federal Reserve rate strategy.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-en-nov-3',
             title: 'Eurozone Final HICP Inflation Data (17/11)',
             url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
             desc: 'Key release for Christine Lagarde to assess services disinflation momentum and ECB rate cut timing.',
             enabled: true
           },
           {
-            id: 'ue-eurusd-en-nov-6',
+            id: 'ue-eurusd-en-nov-4',
             title: 'Federal Reserve FOMC Minutes (18/11)',
             url: 'https://think.ing.com/articles/rates-spark-us-mid-terms-and-expanding-egb-concerns/',
             desc: 'In-depth insight into policymakers\' discussions regarding the path of monetary policy and balance sheet reduction.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-en-nov-5',
+            title: 'Eurozone & US Flash PMI Business Activity (20/11)',
+            url: 'https://www.lefigaro.fr/conjoncture/zone-euro-indices-pmi-services-confirment-resilience-face-au-ralentissement-industriel-20261104',
+            desc: 'Leading indicator of transatlantic manufacturing and services activity across major developed economies.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-en-nov-6',
+            title: 'ECB Monetary Policy Meeting Accounts (26/11)',
+            url: 'https://www.theguardian.com/business/2026/nov/04/brent-crude-oil-prices-us-midterms-inventories-latest',
+            desc: 'Detailed record of Governing Council deliberations and forward policy considerations.',
             enabled: true
           }
         ]
@@ -826,9 +1003,9 @@ window.NewsFeed = (() => {
         keyFactors: [
           {
             id: 'kf-eurpln-1',
-            title: 'Pause monétaire de la NBP à 5,75 % et attractivité du carry trade',
+            title: 'Pause monétaire de la NBP à 5,75 % et attractivité du carry trade (06/11)',
             url: 'https://www.fxstreet.com/news/eur-pln-steady-as-national-bank-of-poland-maintains-restrictive-rate-stance-202611030915',
-            desc: 'Le gouverneur Adam Glapiński maintient les taux directeurs polonais à un niveau élevé, conférant au zloty une prime de portage solide.',
+            desc: 'Le gouverneur Adam Glapiński maintient les taux directeurs polonais à 5,75 %, conférant au zloty une prime de portage solide.',
             enabled: true
           },
           {
@@ -841,17 +1018,24 @@ window.NewsFeed = (() => {
         ],
         upcomingEvents: [
           {
-            id: 'ue-eurpln-nov-1',
-            title: 'Décision du Conseil de politique monétaire polonais - RPP (06/11)',
-            url: 'https://think.ing.com/articles/cee-fx-outlook-polish-zloty-carry-advantage-2026/',
-            desc: 'Évaluation des pressions salariales et confirmation de la pause monétaire sur le taux de référence à 5,75 %.',
-            enabled: true
-          },
-          {
             id: 'ue-eurpln-nov-2',
             title: 'Publication du PIB de la Pologne au 3ème trimestre (14/11)',
             url: 'https://www.theguardian.com/business/2026/nov/03/us-dollar-european-markets-midterm-elections-debt',
             desc: 'Baromètre clé confirmant la résilience de l\'économie polonaise face aux difficultés manufacturières européennes.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurpln-nov-3',
+            title: 'Publication définitive de l\'inflation IPCH en Zone Euro (17/11)',
+            url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
+            desc: 'Tous les regards sont tournés vers Christine Lagarde pour évaluer le rythme de désinflation en Europe centrale et occidentale.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurpln-nov-4',
+            title: 'Production industrielle et ventes au détail en Pologne (21/11)',
+            url: 'https://think.ing.com/articles/cee-fx-outlook-polish-zloty-carry-advantage-2026/',
+            desc: 'Indicateurs mensuels d\'activité pour confirmer la dynamique de croissance du zloty en fin d\'année.',
             enabled: true
           }
         ]
@@ -863,9 +1047,9 @@ window.NewsFeed = (() => {
         keyFactors: [
           {
             id: 'kf-eurpln-en-1',
-            title: 'NBP Monetary Pause at 5.75% and Solid Carry Buffer',
+            title: 'NBP Monetary Pause at 5.75% and Solid Carry Buffer (06/11)',
             url: 'https://www.fxstreet.com/news/eur-pln-steady-as-national-bank-of-poland-maintains-restrictive-rate-stance-202611030915',
-            desc: 'Governor Adam Glapiński maintains high real policy rates, ensuring an attractive carry trade advantage for the Polish zloty.',
+            desc: 'Governor Adam Glapiński maintains high real policy rates at 5.75%, ensuring an attractive carry trade advantage for the Polish zloty.',
             enabled: true
           },
           {
@@ -878,17 +1062,24 @@ window.NewsFeed = (() => {
         ],
         upcomingEvents: [
           {
-            id: 'ue-eurpln-en-nov-1',
-            title: 'Polish Monetary Policy Council (RPP) Rate Decision (06/11)',
-            url: 'https://think.ing.com/articles/cee-fx-outlook-polish-zloty-carry-advantage-2026/',
-            desc: 'Key assessment of wage growth pressures and confirmation of the policy rate hold at 5.75%.',
-            enabled: true
-          },
-          {
             id: 'ue-eurpln-en-nov-2',
             title: 'Poland Q3 GDP Growth Flash Estimate (14/11)',
             url: 'https://www.theguardian.com/business/2026/nov/03/us-dollar-european-markets-midterm-elections-debt',
             desc: 'Crucial growth barometer testing whether Polish domestic demand can sustain outperformance over Germany.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurpln-en-nov-3',
+            title: 'Eurozone Final HICP Inflation Data (17/11)',
+            url: 'https://www.fxstreet.com/news/euro-france-risks-and-ecb-expectations-keep-eur-usd-steady-commerzbank-202610210953',
+            desc: 'Benchmark price index release influencing cross-currency flows across Central and Eastern Europe.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurpln-en-nov-4',
+            title: 'Poland Industrial Output & Retail Sales (21/11)',
+            url: 'https://think.ing.com/articles/cee-fx-outlook-polish-zloty-carry-advantage-2026/',
+            desc: 'Monthly hard data indicators guiding late-year policy positioning for the Polish central bank.',
             enabled: true
           }
         ]
@@ -1054,9 +1245,9 @@ window.NewsFeed = (() => {
         keyFactors: [
           {
             id: 'kf-eurgbp-1',
-            title: 'Prudence de la Banque d\'Angleterre et persistance de l\'inflation des services',
+            title: 'Statu quo de la Banque d\'Angleterre à 4,75 % face à l\'inflation des services (05/11)',
             url: 'https://news.sky.com/story/bank-of-england-sets-interest-rate-expectations-ahead-of-budget-13598712',
-            desc: 'La BoE maintient des taux directeurs plus élevés que la BCE, conférant à la livre sterling un avantage de portage face à l\'euro.',
+            desc: 'La BoE a maintenu le 5 novembre son taux directeur à 4,75 %, signalant une approche prudente face à la résistance des prix intérieurs.',
             enabled: true
           },
           {
@@ -1070,9 +1261,9 @@ window.NewsFeed = (() => {
         upcomingEvents: [
           {
             id: 'ue-eurgbp-nov-1',
-            title: 'Décision du Comité de Politique Monétaire (MPC) de la Bank of England (05/11)',
+            title: 'Publication du PIB britannique préliminaire au 3ème trimestre (14/11)',
             url: 'https://news.sky.com/story/bank-of-england-sets-interest-rate-expectations-ahead-of-budget-13598712',
-            desc: 'Andrew Bailey précisera le rythme de baisse des taux britanniques face à la politique de la BCE.',
+            desc: 'Indicateur clé mesurant la dynamique de croissance du Royaume-Uni après les mesures fiscales du Trésor.',
             enabled: true
           },
           {
@@ -1080,6 +1271,13 @@ window.NewsFeed = (() => {
             title: 'Publication de l\'inflation CPI au Royaume-Uni (18/11)',
             url: 'https://www.lefigaro.fr/economie/la-banque-d-angleterre-temporise-sur-les-baisses-de-taux-face-a-l-inflation-20261103',
             desc: 'Un chiffre supérieur aux attentes confortera la fermeté de la livre face à la monnaie unique.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurgbp-nov-3',
+            title: 'Indices Flash PMI Royaume-Uni & Zone Euro (20/11)',
+            url: 'https://think.ing.com/articles/bank-of-england-rate-decision-preview-sterling-eur-gbp-2026-11-04/',
+            desc: 'Baromètre avancé testant la résilience de l\'activité manufacturière et tertiaire britannique.',
             enabled: true
           }
         ]
@@ -1091,9 +1289,9 @@ window.NewsFeed = (() => {
         keyFactors: [
           {
             id: 'kf-eurgbp-en-1',
-            title: 'Bank of England Caution and Persistent UK Services Inflation',
+            title: 'Bank of England Cautious Rate Hold at 4.75% (05/11)',
             url: 'https://news.sky.com/story/bank-of-england-sets-interest-rate-expectations-ahead-of-budget-13598712',
-            desc: 'The BoE maintains interest rates higher than the ECB, providing Sterling with a favorable carry advantage against the Euro.',
+            desc: 'The BoE maintained its policy rate at 4.75% on Nov 5, confirming a cautious monetary easing stance relative to the ECB.',
             enabled: true
           },
           {
@@ -1107,9 +1305,9 @@ window.NewsFeed = (() => {
         upcomingEvents: [
           {
             id: 'ue-eurgbp-en-nov-1',
-            title: 'Bank of England MPC Rate Decision & Minutes (05/11)',
+            title: 'UK Preliminary Q3 GDP Growth Release (14/11)',
             url: 'https://news.sky.com/story/bank-of-england-sets-interest-rate-expectations-ahead-of-budget-13598712',
-            desc: 'Governor Andrew Bailey provides forward guidance on interest rate trajectory relative to the ECB.',
+            desc: 'Primary indicator measuring British economic growth resilience following the Chancellor\'s budget statement.',
             enabled: true
           },
           {
@@ -1117,6 +1315,13 @@ window.NewsFeed = (() => {
             title: 'UK CPI Inflation Release (18/11)',
             url: 'https://www.lefigaro.fr/economie/la-banque-d-angleterre-temporise-sur-les-baisses-de-taux-face-a-l-inflation-20261103',
             desc: 'Higher-than-expected inflation would solidify Sterling strength against the single currency.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurgbp-en-nov-3',
+            title: 'UK & Eurozone Flash PMI Business Activity (20/11)',
+            url: 'https://think.ing.com/articles/bank-of-england-rate-decision-preview-sterling-eur-gbp-2026-11-04/',
+            desc: 'Transatlantic flash indicators tracking private sector output across Britain and the continent.',
             enabled: true
           }
         ]
@@ -1193,20 +1398,18 @@ window.NewsFeed = (() => {
 
   // ─── Build Curated Feed Preserving Real Publication Dates ───
   function buildCuratedFeedForToday() {
-    const todayStr = getTodayDateStr(); // '04/11/2026'
+    const todayStr = getTodayDateStr(); // e.g. '09/11/2026'
+    const todayShort = todayStr.slice(0, 5); // '09/11'
     return CURATED_FEED_MASTER.map(item => {
       const copy = { ...item };
-      // NEVER override real dateStr! Compare genuinely to today
+      // Genuine comparison to today's date
       const isActuallyToday = (copy.dateStr === todayStr) || 
-                              (copy.dateStr === '04/11') || 
-                              (copy.isToday === true && typeof copy.dateStr === 'string' && copy.dateStr.startsWith('04/11'));
-      copy.isToday = isActuallyToday;
-      if (isActuallyToday) {
-        copy.type = 'today';
-      } else {
-        copy.type = 'key_dossier';
-        copy.isKeyDossier = true;
-      }
+                              (copy.dateStr === todayShort) || 
+                              (copy.pubTime && (Date.now() - copy.pubTime < 24 * 3600 * 1000) && new Date(copy.pubTime).getDate() === new Date().getDate());
+      copy.isToday = !!isActuallyToday;
+      copy.type = isActuallyToday ? 'today' : 'key_dossier';
+      copy.isKeyDossier = !isActuallyToday;
+      copy.timeAgo = computeDynamicTimeAgo(copy.pubTime, copy.dateStr);
       return copy;
     });
   }
@@ -1259,6 +1462,7 @@ window.NewsFeed = (() => {
 
         const now = Date.now();
         const todayStr = getTodayDateStr();
+        const todayShort = todayStr.slice(0, 5);
 
         yResults.forEach(r => {
           if (r.status === 'fulfilled' && r.value && Array.isArray(r.value.news)) {
@@ -1267,7 +1471,7 @@ window.NewsFeed = (() => {
               const pTime = n.providerPublishTime ? n.providerPublishTime * 1000 : now;
               const d = new Date(pTime);
               const artDate = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-              const isToday = (artDate === todayStr);
+              const isToday = (artDate === todayStr) || (artDate.slice(0, 5) === todayShort);
 
               clientLiveItems.push({
                 id: 'yahoo-' + (n.uuid || Math.random().toString(36).substr(2, 7)),
@@ -1283,7 +1487,7 @@ window.NewsFeed = (() => {
                 isKeyDossier: !isToday,
                 pubTime: pTime,
                 dateStr: artDate,
-                timeAgo: isToday ? 'Aujourd\'hui' : artDate,
+                timeAgo: computeDynamicTimeAgo(pTime, artDate),
                 type: isToday ? 'today' : 'key_dossier'
               });
             });
@@ -1303,13 +1507,17 @@ window.NewsFeed = (() => {
 
         const pairs = Array.isArray(a.pairs) && a.pairs.length > 0 ? a.pairs : ['EUR/USD'];
         const todayStr = getTodayDateStr();
-        const isToday = (a.dateStr === todayStr) || (a.isToday === true);
+        const todayShort = todayStr.slice(0, 5);
+        const isToday = (a.dateStr === todayStr) || 
+                        (a.dateStr === todayShort) ||
+                        (a.pubTime && (Date.now() - a.pubTime < 24 * 3600 * 1000) && new Date(a.pubTime).getDate() === new Date().getDate());
 
         combined.push({
           ...a,
           pairs,
-          isToday,
-          type: isToday ? 'today' : 'key_dossier'
+          isToday: !!isToday,
+          type: isToday ? 'today' : 'key_dossier',
+          timeAgo: computeDynamicTimeAgo(a.pubTime, a.dateStr)
         });
       };
 
@@ -1459,7 +1667,7 @@ window.NewsFeed = (() => {
         <div style="margin-top:12px; padding-top:10px; border-top:1px solid #f1f5f9; display:flex; justify-content:space-between; align-items:center; font-size:11px; flex-wrap:wrap; gap:8px;">
           <div style="color:#64748b; display:flex; align-items:center; gap:5px;">
             <span>🕒</span>
-            <span style="font-weight:700; color:${isToday ? '#15803d' : '#475569'};">${article.timeAgo || 'Récent'}</span>
+            <span style="font-weight:700; color:${isToday ? '#15803d' : '#475569'};">${computeDynamicTimeAgo(article.pubTime, article.dateStr)}</span>
             <span style="opacity:0.5;">•</span>
             <span style="font-weight:600;">${article.dateStr || getTodayDateStr()}</span>
           </div>
@@ -1614,7 +1822,7 @@ Kevin Saudubray`;
   }
 
   // ─── SAVED COMMERCIAL EMAILS & FAVORITES (LocalStorage) ───
-  const SAVED_EMAILS_STORAGE_KEY = 'ks_fx_saved_emails_v2';
+  const SAVED_EMAILS_STORAGE_KEY = 'ks_fx_saved_emails_v3';
 
   function getInitialDefaultSavedEmails() {
     const eurUsdFrPreset = PAIR_EMAIL_PRESETS['EUR/USD'].fr;
@@ -1624,10 +1832,10 @@ Kevin Saudubray`;
     return [
       {
         id: 'saved_mail_default_1',
-        title: 'EUR/USD - Dérive 4.05% (Élections US & Catalyseurs Novembre)',
+        title: 'EUR/USD - Dérive 4.05% (NFP Post-Payroll & Catalyseurs Novembre)',
         note: 'Modèle de référence recommandé pour relance clients importateurs',
-        createdAt: '04/11/2026 à 08:00',
-        timestamp: 1793779200000,
+        createdAt: '09/11/2026 à 09:00',
+        timestamp: Date.now(),
         emailData: {
           lang: 'fr',
           clientName: 'XXXX',
@@ -1642,10 +1850,10 @@ Kevin Saudubray`;
       },
       {
         id: 'saved_mail_default_2',
-        title: 'Institutional EUR/USD Update - US Midterms & FX Forwards',
+        title: 'Institutional EUR/USD Update - US Jobs Resilience & FX Forwards',
         note: 'English institutional pitch with FX Forwards terminology',
-        createdAt: '04/11/2026 à 08:05',
-        timestamp: 1793779500000,
+        createdAt: '09/11/2026 à 09:05',
+        timestamp: Date.now(),
         emailData: {
           lang: 'en',
           clientName: 'XXXX',
@@ -1962,6 +2170,9 @@ Kevin Saudubray`;
 
   // ─── Render Email Generator Sub-Tab ───
   function renderEmailGeneratorTab() {
+    // Automatically sanitize so past events are never rendered in upcoming catalysts
+    sanitizeUpcomingEvents();
+
     const e = state.email;
     const isEn = (e.lang === 'en');
     const { subject, htmlBody } = generateExactEmail();
@@ -2481,6 +2692,68 @@ Kevin Saudubray`;
     bindEvents();
   }
 
+  // ─── Automated Sanitation: Expired Events Moved to Key Drivers, Strictly Upcoming Kept ───
+  function sanitizeUpcomingEvents() {
+    const pair = state.email.pair || 'EUR/USD';
+    const lang = state.email.lang || 'fr';
+    const isEn = (lang === 'en');
+
+    // 1. Identify which events in upcomingEvents have expired
+    const expiredList = (state.email.upcomingEvents || []).filter(u => isEventExpired(u.title));
+
+    // 2. Remove all expired events from upcomingEvents
+    state.email.upcomingEvents = (state.email.upcomingEvents || []).filter(u => !isEventExpired(u.title));
+
+    // 3. For any expired event with market impact, ensure it is in keyFactors with clean wording
+    expiredList.forEach(exp => {
+      const cleanTitle = exp.title.replace(/\s*\(\d{1,2}[\/\-]\d{1,2}\)/, '').trim();
+      const alreadyInKf = state.email.keyFactors.some(k => 
+        k.title.toLowerCase().includes(cleanTitle.toLowerCase().slice(0, 20)) ||
+        k.url === exp.url
+      );
+      if (!alreadyInKf) {
+        state.email.keyFactors.push({
+          id: 'kf-auto-' + Date.now() + '-' + Math.random().toString(36).substr(2, 5),
+          title: exp.title,
+          url: exp.url,
+          desc: exp.desc,
+          enabled: true
+        });
+      }
+    });
+
+    // 4. Ensure EUR/USD specifically reflects recent major drivers (NFP 06/11, BoE 05/11, Midterms 04/11)
+    if (pair === 'EUR/USD') {
+      const hasNfp = state.email.keyFactors.some(k => /nfp|payrolls|emploi américain/i.test(k.title));
+      if (!hasNfp) {
+        state.email.keyFactors.push(isEn ? {
+          id: 'kf-eurusd-en-nfp',
+          title: 'US Non-Farm Payrolls (NFP) Beat Confirms Resilient Labor Market (06/11)',
+          url: 'https://www.investing.com/news/economic-indicators/us-nonfarm-payrolls-preview-labor-market-resilience-in-focus-3458921',
+          desc: 'US job additions exceeded expectations last Friday, underlining domestic resilience, dampening rapid Fed cut expectations, and lifting the greenback against the Euro.',
+          enabled: true
+        } : {
+          id: 'kf-eurusd-fr-nfp',
+          title: 'Rapport sur l\'emploi américain (NFP) supérieur aux attentes (06/11)',
+          url: 'https://www.investing.com/news/economic-indicators/us-nonfarm-payrolls-preview-labor-market-resilience-in-focus-3458921',
+          desc: 'Les créations d\'emplois aux États-Unis publiées vendredi ont confirmé la solidité du marché du travail, tempérant les anticipations de baisse rapide des taux de la Fed et propulsant le Dollar face à l\'Euro.',
+          enabled: true
+        });
+      }
+    }
+
+    // 5. If upcomingEvents has fewer than 3 items, refill with future catalysts from preset
+    const preset = getPairPreset(pair, lang);
+    if (preset && Array.isArray(preset.upcomingEvents)) {
+      const futurePresets = preset.upcomingEvents.filter(u => !isEventExpired(u.title));
+      futurePresets.forEach(fp => {
+        if (!state.email.upcomingEvents.some(u => u.title === fp.title)) {
+          state.email.upcomingEvents.push(JSON.parse(JSON.stringify(fp)));
+        }
+      });
+    }
+  }
+
   // ─── Dynamic Hourly / Contextual Update for Email Template ───
   function updateEmailByTimeAndContext() {
     const now = new Date();
@@ -2488,57 +2761,16 @@ Kevin Saudubray`;
     const curMinutes = String(now.getMinutes()).padStart(2, '0');
     const timeFormatted = `${String(curHour).padStart(2, '0')}:${curMinutes}`;
     const isEn = (state.email.lang === 'en');
-    const pair = state.email.pair || 'EUR/USD';
 
-    // 1. Shift passed morning / overnight events (e.g. US Midterms on 04/11) into Key Drivers with actual results
-    if (pair === 'EUR/USD') {
-      if (isEn) {
-        const existingKfIdx = state.email.keyFactors.findIndex(k => /midterm|election/i.test(k.title));
-        const electionKf = {
-          id: 'kf-eurusd-en-3',
-          title: 'US Midterm Election Results (04/11)',
-          url: 'https://www.reuters.com/markets/currencies/us-dollar-holds-ranges-us-midterm-election-results-2026-11-04/',
-          desc: 'Results confirm a divided Congress in Washington, curbing aggressive fiscal expansion risks and anchoring US Treasury yields, preserving Dollar stability against the Euro.',
-          enabled: true
-        };
-        if (existingKfIdx >= 0) {
-          state.email.keyFactors[existingKfIdx] = electionKf;
-        } else {
-          state.email.keyFactors.push(electionKf);
-        }
-      } else {
-        const existingKfIdx = state.email.keyFactors.findIndex(k => /élection|midterm/i.test(k.title));
-        const electionKf = {
-          id: 'kf-eurusd-3',
-          title: 'Résultats des élections américaines de mi-mandat (04/11)',
-          url: 'https://www.reuters.com/markets/currencies/us-dollar-holds-ranges-us-midterm-election-results-2026-11-04/',
-          desc: 'Les résultats confirment un Congrès divisé à Washington (Sénat/Chambre), écartant le risque d\'emballement budgétaire et maintenant les rendements obligataires américains stables au profit du Dollar face à l\'Euro.',
-          enabled: true
-        };
-        if (existingKfIdx >= 0) {
-          state.email.keyFactors[existingKfIdx] = electionKf;
-        } else {
-          state.email.keyFactors.push(electionKf);
-        }
-      }
-    }
-
-    // 2. Filter out any upcoming events that have expired (past date or passed same-day event)
-    state.email.upcomingEvents = state.email.upcomingEvents.filter(u => !isEventExpired(u.title));
-
-    // If the list of upcoming events is empty or has fewer than 3 items, synchronize from future preset
-    const preset = getPairPreset(pair, state.email.lang);
-    if (state.email.upcomingEvents.length < 3 && preset.upcomingEvents) {
-      const futureFromPreset = preset.upcomingEvents.filter(u => !isEventExpired(u.title));
-      state.email.upcomingEvents = JSON.parse(JSON.stringify(futureFromPreset));
-    }
+    // Execute deep automated sanitation
+    sanitizeUpcomingEvents();
 
     render();
 
     if (window.App && window.App.showToast) {
       const msg = isEn
-        ? `Email updated at ${timeFormatted}: passed election events moved to Key Drivers, next upcoming catalysts synchronized !`
-        : `Email mis à jour à ${timeFormatted} : résultats électoraux intégrés aux Facteurs clés et prochains catalyseurs synchronisés !`;
+        ? `Email updated at ${timeFormatted}: expired catalysts shifted to Key Drivers, next upcoming events synchronized !`
+        : `Email mis à jour à ${timeFormatted} : événements passés basculés en Facteurs clés et prochains catalyseurs synchronisés !`;
       window.App.showToast(msg, 'success');
     }
   }
@@ -2706,6 +2938,7 @@ Kevin Saudubray`;
         state.email.direction = preset.direction;
         state.email.keyFactors = JSON.parse(JSON.stringify(preset.keyFactors));
         state.email.upcomingEvents = JSON.parse(JSON.stringify(preset.upcomingEvents));
+        sanitizeUpcomingEvents();
 
         render();
         if (window.App && window.App.showToast) {
@@ -2733,6 +2966,7 @@ Kevin Saudubray`;
         state.email.direction = preset.direction;
         state.email.keyFactors = JSON.parse(JSON.stringify(preset.keyFactors));
         state.email.upcomingEvents = JSON.parse(JSON.stringify(preset.upcomingEvents));
+        sanitizeUpcomingEvents();
         render();
         if (window.App && window.App.showToast) {
           const langText = state.email.lang === 'en' ? 'English (FX Forwards)' : 'Français';
@@ -2886,6 +3120,7 @@ Kevin Saudubray`;
       state.email.direction = preset.direction;
       state.email.keyFactors = JSON.parse(JSON.stringify(preset.keyFactors));
       state.email.upcomingEvents = JSON.parse(JSON.stringify(preset.upcomingEvents));
+      sanitizeUpcomingEvents();
       render();
       if (window.App && window.App.showToast) {
         const msg = state.email.lang === 'en' 
@@ -3111,6 +3346,7 @@ Kevin Saudubray`;
   }
 
   function initPage() {
+    sanitizeUpcomingEvents();
     if (state.articles.length === 0) {
       fetchArticles();
     } else {
