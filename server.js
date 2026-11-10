@@ -560,6 +560,26 @@ async function fetchPressReview() {
   articles.sort((a, b) => b.pubTime - a.pubTime);
 
   pressCache = { data: articles, timestamp: now };
+
+  // Asynchronously persist to data/live-press-review.json
+  try {
+    const outDir = path.join(__dirname, 'data');
+    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+    const payload = {
+      success: true,
+      total: articles.length,
+      stats: {
+        total: articles.length,
+        todayCount: articles.filter(a => a.isToday).length,
+        frCount: articles.filter(a => a.lang === 'fr').length,
+        enCount: articles.filter(a => a.lang === 'en').length
+      },
+      articles,
+      timestamp: new Date().toISOString()
+    };
+    fs.writeFile(path.join(outDir, 'live-press-review.json'), JSON.stringify(payload, null, 2), () => {});
+  } catch (_) {}
+
   return articles;
 }
 
