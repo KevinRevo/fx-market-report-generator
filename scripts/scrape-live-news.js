@@ -1,33 +1,34 @@
 /**
  * Standalone Automated News Scraper for FX Market Report Generator
- * Fetches real-time RSS feeds across English and French institutional sources,
+ * Fetches real-time RSS feeds across French and English institutional sources,
+ * enforces strict date freshness (<= 14 days) and FX/Macro relevance filtering,
  * normalizes dates, pairs, categories, and saves to data/live-press-review.json.
- * Executed locally or via GitHub Actions on a daily / multi-hour schedule.
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const PRESS_FEEDS = [
-  // English Trusted Sources
-  { id: 'reuters', name: 'Reuters', lang: 'en', defCat: 'FX & Devises', url: 'https://news.google.com/rss/search?q=site:reuters.com+(forex+OR+currency+OR+dollar+OR+%22central+bank%22)+when:3d&hl=en-US&gl=US&ceid=US:en' },
-  { id: 'ing', name: 'ING Think', lang: 'en', defCat: 'Banques Centrales', url: 'https://think.ing.com/rss' },
-  { id: 'fxempire', name: 'FX Empire', lang: 'en', defCat: 'FX & Devises', url: 'https://news.google.com/rss/search?q=site:fxempire.com+(forex+OR+dollar+OR+eurusd)+when:3d&hl=en-US&gl=US&ceid=US:en' },
-  { id: 'theguardian_biz', name: 'The Guardian (Business)', lang: 'en', defCat: 'Macroéconomie', url: 'https://www.theguardian.com/business/rss' },
-  { id: 'theguardian_world', name: 'The Guardian (World)', lang: 'en', defCat: 'Géopolitique', url: 'https://www.theguardian.com/world/rss' },
-  { id: 'sky_biz', name: 'Sky News (Business)', lang: 'en', defCat: 'Macroéconomie', url: 'https://feeds.skynews.com/feeds/rss/business.xml' },
-  { id: 'sky_world', name: 'Sky News (World)', lang: 'en', defCat: 'Géopolitique', url: 'https://feeds.skynews.com/feeds/rss/world.xml' },
-  { id: 'investing_en', name: 'Investing.com', lang: 'en', defCat: 'Macroéconomie', url: 'https://www.investing.com/rss/news_1.rss' },
-  { id: 'fxstreet', name: 'FXStreet', lang: 'en', defCat: 'FX & Devises', url: 'https://www.fxstreet.com/rss/news' },
-  { id: 'usnews', name: 'US News', lang: 'en', defCat: 'Macroéconomie', url: 'https://www.usnews.com/rss/money' },
+const MAX_AGE_DAYS = 14;
+const MAX_AGE_MS = MAX_AGE_DAYS * 24 * 3600 * 1000;
 
-  // French Trusted Sources
-  { id: 'lesechos', name: 'Les Echos', lang: 'fr', defCat: 'FX & Devises', url: 'https://news.google.com/rss/search?q=site:lesechos.fr+(devises+OR+dollar+OR+euro+OR+bce+OR+geopolitique)+when:3d&hl=fr&gl=FR&ceid=FR:fr' },
-  { id: 'lemonde_eco', name: 'Le Monde (Éco)', lang: 'fr', defCat: 'Macroéconomie', url: 'https://www.lemonde.fr/economie/rss_full.xml' },
-  { id: 'lemonde_inter', name: 'Le Monde (International)', lang: 'fr', defCat: 'Géopolitique', url: 'https://www.lemonde.fr/international/rss_full.xml' },
-  { id: 'lefigaro_eco', name: 'Le Figaro Économie', lang: 'fr', defCat: 'Macroéconomie', url: 'https://www.lefigaro.fr/rss/figaro_economie.xml' },
-  { id: 'investing_fr', name: 'Investing.com (FR)', lang: 'fr', defCat: 'Macroéconomie', url: 'https://fr.investing.com/rss/news_1.rss' },
-  { id: 'bfm_bourse', name: 'BFM Business', lang: 'fr', defCat: 'Macroéconomie', url: 'https://news.google.com/rss/search?q=site:bfmtv.com/economie+(bourse+OR+devises+OR+taux+OR+petrole)+when:3d&hl=fr&gl=FR&ceid=FR:fr' }
+const PRESS_FEEDS = [
+  // French Trusted FX & Macro Sources
+  { id: 'investing_fr_fx', name: 'Investing.com (FR)', lang: 'fr', defCat: 'FX & Devises', strictFilter: false, url: 'https://fr.investing.com/rss/news_1.rss' },
+  { id: 'investing_fr_ana', name: 'Investing.com (FR)', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://fr.investing.com/rss/market_overview.rss' },
+  { id: 'investing_fr_comm', name: 'Investing.com (FR)', lang: 'fr', defCat: 'Énergie & Pétrole', strictFilter: true, url: 'https://fr.investing.com/rss/news_11.rss' },
+  { id: 'investing_fr_eco', name: 'Investing.com (FR)', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://fr.investing.com/rss/news_14.rss' },
+  { id: 'bfm_eco', name: 'BFM Business', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://www.bfmtv.com/rss/economie/' },
+  { id: 'lefigaro_eco', name: 'Le Figaro Économie', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://www.lefigaro.fr/rss/figaro_economie.xml' },
+  { id: 'lemonde_eco', name: 'Le Monde (Éco)', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://www.lemonde.fr/economie/rss_full.xml' },
+
+  // English Trusted FX & Macro Sources
+  { id: 'fxstreet', name: 'FXStreet', lang: 'en', defCat: 'FX & Devises', strictFilter: false, url: 'https://www.fxstreet.com/rss/news' },
+  { id: 'ing', name: 'ING Think', lang: 'en', defCat: 'Banques Centrales', strictFilter: true, url: 'https://think.ing.com/rss' },
+  { id: 'investing_en', name: 'Investing.com', lang: 'en', defCat: 'FX & Devises', strictFilter: false, url: 'https://www.investing.com/rss/news_1.rss' },
+  { id: 'ecb_press', name: 'BCE / ECB', lang: 'en', defCat: 'Banques Centrales', strictFilter: false, url: 'https://www.ecb.europa.eu/rss/press.html' },
+  { id: 'fed_press', name: 'Federal Reserve', lang: 'en', defCat: 'Banques Centrales', strictFilter: false, url: 'https://www.federalreserve.gov/feeds/press_all.xml' },
+  { id: 'theguardian_biz', name: 'The Guardian (Business)', lang: 'en', defCat: 'Macroéconomie', strictFilter: true, url: 'https://www.theguardian.com/business/rss' },
+  { id: 'sky_biz', name: 'Sky News (Business)', lang: 'en', defCat: 'Macroéconomie', strictFilter: true, url: 'https://feeds.skynews.com/feeds/rss/business.xml' }
 ];
 
 function cleanHtml(str) {
@@ -43,12 +44,30 @@ function cleanHtml(str) {
             .trim();
 }
 
+function isRelevantFxMacro(title, desc, strictFilter) {
+  const text = ((title || '') + ' ' + (desc || '')).toLowerCase();
+
+  // Hard blacklist for off-topic consumer/crypto/political fluff
+  const blacklist = /\b(bitcoin|ethereum|solana|dogecoin|xrp|memecoin|altcoin|crypto|nft|shiba|cardano|migrants?|rwanda|présidentielle 2027|football|ligue 1|rugby|tennis|cinema|cinéma|netflix|spotify|assassinat|procès|meurtre|explosion|journaliste|immobilier locatif|assurance-vie|livret a|retraite par|smic|allocation|grève sncf|airbus|boeing|iphone|nvidia|apple|tesla|amazon|google|meta|microsoft|open ?ai|chatgpt|casino|kretinsky)\b/i;
+  const hasExplicitFxOrCentralBank = /\b(eur\/usd|eurusd|eur\/chf|eurchf|eur\/gbp|eurgbp|eur\/pln|eurpln|usd\/pln|usdpln|usd\/huf|usdhuf|czk\/usd|czkusd|chf\/usd|chfusd|gbp\/usd|gbpusd|forex|taux de change|devises?|exchange rate|dxy|dollar index|fed\b|fomc|bce\b|ecb\b|bns\b|snb\b|boe\b|bank of england|banque d'angleterre|nbp\b|mnb\b|cnb\b|powell|lagarde|politique monétaire|monetary policy|taux directeurs?|interest rate)\b/i.test(text);
+
+  if (blacklist.test(text) && !hasExplicitFxOrCentralBank) {
+    return false;
+  }
+
+  if (!strictFilter) return true;
+
+  // Strict relevance keywords for general economy/business/research feeds
+  const fxMacroRegex = /\b(euro|dollar|usd|eur|chf|gbp|pln|huf|czk|zloty|forint|koruna|couronne tchèque|franc suisse|livre sterling|sterling|yen|jpy|devise|devises|forex|fx|taux de change|exchange rate|fed|fomc|bce|ecb|bns|snb|boe|nbp|mnb|cnb|banque centrale|central bank|powell|lagarde|taux directeurs?|interest rate|rate cut|rate hike|inflation|cpi|ipch|hicp|pce|pib|gdp|pmi|emploi américain|payrolls|nfp|retail sales|ventes au détail|obligataire|treasury|yield|rendement|spread|déficit|dette souveraine|sovereign debt|brent|wti|pétrole|crude oil|opec|opep|tarifs?|droits de douane|trade war|geopolitic|géopolitique)\b/i;
+  return fxMacroRegex.test(text);
+}
+
 function detectCategory(title, desc, defCat) {
   const text = (title + ' ' + (desc || '')).toLowerCase();
-  if (/oil|pétrole|petrole|brent|wti|crude|opec|opep|gaz|gas|hormuz/.test(text)) return 'Énergie & Pétrole';
-  if (/fed\b|bce\b|ecb\b|powell|lagarde|taux directeurs?|interest rates?|fomc|bns|snb|boe|bank of england|nbp|rate hike|rate cut|monetary policy|politique monétaire/.test(text)) return 'Banques Centrales';
-  if (/war|guerre|tensions?|iran|israel|moyen-orient|ukraine|russie|russia|china|chine|taiwan|sanctions?|trump|conflit|otan|nato|red sea|mer rouge|houthi|geopolitic|géopolitique/.test(text)) return 'Géopolitique';
-  if (/dollar|euro|forex|devises?|taux de change|dxy|pound|yen|franc suisse|zloty|forint|koruna|\bfx\b|gbp|chf|jpy|eur\/usd|currencies/.test(text)) return 'FX & Devises';
+  if (/\b(oil|pétrole|petrole|brent|wti|crude|opec|opep|gaz|gas|hormuz|énergie|energy)\b/.test(text)) return 'Énergie & Pétrole';
+  if (/\b(fed|bce|ecb|powell|lagarde|taux directeurs?|interest rates?|fomc|bns|snb|boe|bank of england|banque d'angleterre|nbp|mnb|cnb|rate hike|rate cut|monetary policy|politique monétaire|banque centrale|central bank)\b/.test(text)) return 'Banques Centrales';
+  if (/\b(war|guerre|iran|israel|ukraine|russie|russia|china|chine|taiwan|sanctions?|trump|conflit|otan|nato|red sea|mer rouge|houthi|geopolitic|géopolitique|tariffs?|droits de douane)\b/.test(text)) return 'Géopolitique';
+  if (/\b(dollar|euro|forex|devises?|taux de change|exchange rate|dxy|pound|sterling|yen|franc suisse|zloty|forint|koruna|fx|gbp|chf|jpy|eur\/usd|currencies)\b/.test(text)) return 'FX & Devises';
   return defCat || 'Macroéconomie';
 }
 
@@ -56,34 +75,31 @@ function detectPairs(title, desc) {
   const text = ((title || '') + ' ' + (desc || '')).toLowerCase();
   const pairs = new Set();
 
-  if (text.includes('eur/usd') || text.includes('eurusd') || text.includes('euro-dollar') || text.includes('euro dollar')) pairs.add('EUR/USD');
-  if (text.includes('eur/chf') || text.includes('eurchf') || text.includes('franc suisse') || text.includes('swiss franc') || text.includes('bns') || text.includes('snb')) pairs.add('EUR/CHF');
-  if (text.includes('chf/usd') || text.includes('chfusd') || text.includes('usd/chf') || text.includes('usdchf')) {
+  if (/eur\/usd|eurusd|euro-dollar|euro dollar|\beuro\b.*\bdollar\b|\bdollar\b.*\beuro\b/.test(text)) pairs.add('EUR/USD');
+  if (/eur\/chf|eurchf|franc suisse|swiss franc|\bbns\b|\bsnb\b/.test(text)) pairs.add('EUR/CHF');
+  if (/chf\/usd|chfusd|usd\/chf|usdchf/.test(text)) {
     pairs.add('CHF/USD');
     pairs.add('EUR/CHF');
   }
-  if (text.includes('pln') || text.includes('zloty') || text.includes('złoty') || text.includes('nbp') || text.includes('poland') || text.includes('pologne')) {
+  if (/\bpln\b|zloty|złoty|\bnbp\b|pologne|poland|polish/.test(text)) {
     pairs.add('EUR/PLN');
     pairs.add('USD/PLN');
   }
-  if (text.includes('eur/pln') || text.includes('eurpln')) pairs.add('EUR/PLN');
-  if (text.includes('usd/pln') || text.includes('usdpln')) pairs.add('USD/PLN');
-  if (text.includes('huf') || text.includes('forint') || text.includes('mnb') || text.includes('hungary') || text.includes('hongrie') || text.includes('usd/huf') || text.includes('usdhuf')) pairs.add('USD/HUF');
-  if (text.includes('czk') || text.includes('koruna') || text.includes('couronne') || text.includes('cnb') || text.includes('czech') || text.includes('tchèque') || text.includes('czk/usd') || text.includes('czkusd')) pairs.add('CZK/USD');
-  if (text.includes('gbp') || text.includes('pound') || text.includes('sterling') || text.includes('boe') || text.includes('bank of england') || text.includes('eur/gbp') || text.includes('gbp/usd')) {
+  if (/eur\/pln|eurpln/.test(text)) pairs.add('EUR/PLN');
+  if (/usd\/pln|usdpln/.test(text)) pairs.add('USD/PLN');
+  if (/\bhuf\b|forint|\bmnb\b|hongrie|hungary|hungarian|usd\/huf|usdhuf/.test(text)) pairs.add('USD/HUF');
+  if (/\bczk\b|koruna|couronne tchèque|\bcnb\b|république tchèque|czech|czk\/usd|czkusd/.test(text)) pairs.add('CZK/USD');
+  if (/\bgbp\b|pound|sterling|\bboe\b|bank of england|banque d'angleterre|livre sterling|eur\/gbp|gbp\/usd/.test(text)) {
     pairs.add('EUR/GBP');
     pairs.add('GBP/USD');
   }
-  if (text.includes('bce') || text.includes('ecb') || text.includes('lagarde') || text.includes('zone euro') || text.includes('eurozone') || text.includes('dette souveraine') || text.includes('french') || text.includes('déficit')) {
+  if (/\bbce\b|\becb\b|lagarde|zone euro|eurozone|euro area/.test(text)) {
     pairs.add('EUR/USD');
     pairs.add('EUR/CHF');
   }
-  if (text.includes('fed') || text.includes('powell') || text.includes('fomc') || text.includes('dollar') || text.includes('treasury') || text.includes('midterm') || text.includes('trump') || text.includes('dxy')) {
+  if (/\bfed\b|powell|fomc|dollar|greenback|billet vert|treasury|\bdxy\b|\bnfp\b|payrolls/.test(text)) {
     pairs.add('EUR/USD');
     pairs.add('CHF/USD');
-    pairs.add('USD/PLN');
-    pairs.add('USD/HUF');
-    pairs.add('CZK/USD');
   }
   if (pairs.size === 0) {
     pairs.add('EUR/USD');
@@ -91,9 +107,12 @@ function detectPairs(title, desc) {
   return Array.from(pairs);
 }
 
-function parisDateStr(epochMs) {
-  const d = new Date(epochMs);
-  return d.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit' });
+function parisIsoDate(epochMs) {
+  return new Date(epochMs).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+}
+
+function parisFullDateStr(epochMs) {
+  return new Date(epochMs).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function timeAgo(date) {
@@ -110,7 +129,7 @@ function timeAgo(date) {
 
 function detectKeyDossier(title, desc, pubTime, now) {
   const text = ((title || '') + ' ' + (desc || '')).toLowerCase();
-  const isStructuralTopic = /agitation|dette souveraine|sovereign debt|midterm|élection|election|trump|divergence|structural|budget|déficit|mandat|fomc decision|bce décision|ecb decision|rate cut cycle|tariffs|droits de douane/.test(text);
+  const isStructuralTopic = /dette souveraine|sovereign debt|divergence|structural|budget|déficit|fomc|bce|ecb|rate cut|rate hike|tariffs|droits de douane|inflation|payrolls|gdp|pib/.test(text);
   const isOlder = (now - pubTime) > (12 * 3600 * 1000);
   return isStructuralTopic || isOlder;
 }
@@ -118,7 +137,7 @@ function detectKeyDossier(title, desc, pubTime, now) {
 async function runScraper() {
   console.log('Starting live news scraping across all sources...');
   const now = Date.now();
-  const todayDateStr = parisDateStr(now);
+  const todayIso = parisIsoDate(now);
   const articles = [];
   const seenTitles = new Set();
 
@@ -126,9 +145,12 @@ async function runScraper() {
     try {
       const res = await fetch(feed.url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-        signal: AbortSignal.timeout(6000)
+        signal: AbortSignal.timeout(7000)
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.warn(`Feed HTTP ${res.status} (${feed.name})`);
+        return;
+      }
 
       const xml = await res.text();
       const grab = (item, tag) => {
@@ -136,27 +158,38 @@ async function runScraper() {
         return m ? m[1].trim() : '';
       };
 
-      const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
-      items.slice(0, 20).forEach(it => {
+      const items = xml.match(/<item[\s\S]*?>[\s\S]*?<\/item>/g) || [];
+      items.slice(0, 25).forEach(it => {
         let title = cleanHtml(grab(it, 'title'));
-        let link = grab(it, 'link');
+        let link = grab(it, 'link').replace(/^<!\[CDATA\[/, '').replace(/\]\]>$/, '').trim();
         let desc = cleanHtml(grab(it, 'description'));
-        let pubDateStr = grab(it, 'pubDate');
+        let pubDateStr = grab(it, 'pubDate') || grab(it, 'dc:date') || grab(it, 'published') || grab(it, 'updated');
 
-        if (!title || title.length < 10) return;
-        if (title.endsWith(' - Reuters')) title = title.replace(/ - Reuters$/, '');
-        if (title.endsWith(' - Les Échos')) title = title.replace(/ - Les Échos$/, '');
-        if (title.endsWith(' - FX Empire')) title = title.replace(/ - FX Empire$/, '');
-        if (title.endsWith(' - BFM Bourse')) title = title.replace(/ - BFM Bourse$/, '');
+        if (!title || title.length < 15 || !link || !link.startsWith('http')) return;
+        if (title.startsWith('- ')) return;
 
-        const normTitle = title.toLowerCase().slice(0, 50);
+        // Parse date strictly — reject undated or >14 days old or >24h future
+        if (!pubDateStr) return;
+        let normalizedDateStr = pubDateStr.trim();
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(normalizedDateStr)) {
+          normalizedDateStr = normalizedDateStr.replace(' ', 'T') + 'Z';
+        }
+        const d = new Date(normalizedDateStr);
+        if (isNaN(d.getTime())) return;
+        const pubTime = d.getTime();
+        if (now - pubTime > MAX_AGE_MS) return;
+        if (pubTime - now > 24 * 3600 * 1000) return;
+
+        // Strict FX/Macro relevance filter
+        if (!isRelevantFxMacro(title, desc, feed.strictFilter)) return;
+
+        const normTitle = title.toLowerCase().slice(0, 55);
         if (seenTitles.has(normTitle)) return;
         seenTitles.add(normTitle);
 
-        const d = pubDateStr ? new Date(pubDateStr) : new Date();
-        const pubTime = isNaN(d.getTime()) ? now : d.getTime();
-        const artDateStr = parisDateStr(pubTime);
-        const isToday = (artDateStr === todayDateStr);
+        const artIso = parisIsoDate(pubTime);
+        const artDateStr = parisFullDateStr(pubTime);
+        const isToday = (artIso === todayIso);
         const isKey = detectKeyDossier(title, desc, pubTime, now);
 
         articles.push({
@@ -172,6 +205,7 @@ async function runScraper() {
           isToday,
           isKeyDossier: isKey,
           pubTime,
+          isoDate: artIso,
           dateStr: artDateStr,
           timeAgo: timeAgo(d)
         });
@@ -208,7 +242,7 @@ async function runScraper() {
   const outPath = path.join(dataDir, 'live-press-review.json');
   fs.writeFileSync(outPath, JSON.stringify(outData, null, 2), 'utf8');
 
-  console.log(`✓ Scraped ${articles.length} articles total (${todayCount} from today, ${frCount} FR, ${enCount} EN).`);
+  console.log(`✓ Scraped ${articles.length} verified recent FX/macro articles (${todayCount} from today ${todayIso}, ${frCount} FR, ${enCount} EN).`);
   console.log(`✓ Saved output to ${outPath}`);
 }
 
