@@ -69,6 +69,28 @@ window.NewsFeed = (() => {
     return `${day}/${month}`;
   }
 
+  function getTodayFullDateStr() {
+    const d = new Date();
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}/${d.getFullYear()}`;
+  }
+
+  function getTodayIsoStr() {
+    return new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+  }
+
+  function isArticleToday(pubTime, dateStr, isoDate) {
+    const todayIso = getTodayIsoStr();
+    if (isoDate) return isoDate === todayIso;
+    if (pubTime) {
+      const artIso = new Date(pubTime).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+      return artIso === todayIso;
+    }
+    const todayFull = getTodayFullDateStr();
+    return Boolean(dateStr && dateStr === todayFull);
+  }
+
   // ─── Date Parsing & Validation Utility ───
   function parseEventDate(title) {
     if (!title) return null;
@@ -115,11 +137,10 @@ window.NewsFeed = (() => {
 
   // ─── Dynamic Relative Time Formatter (Real-time recalculation based on genuine pubTime) ───
   function computeDynamicTimeAgo(pubTime, dateStr) {
-    const todayStr = getTodayDateStr(); // e.g. "09/11"
-    const isTodayDate = Boolean(dateStr && (dateStr === todayStr || dateStr.startsWith(todayStr)));
+    const isTodayDate = isArticleToday(pubTime, dateStr);
 
-    // If dateStr is not today
-    if (dateStr && !isTodayDate) {
+    // If not published today
+    if (!isTodayDate) {
       if (pubTime) {
         const diffMs = Date.now() - pubTime;
         const diffDays = Math.floor(diffMs / (24 * 3600 * 1000));
@@ -127,11 +148,11 @@ window.NewsFeed = (() => {
         if (diffDays === 1) return 'Hier';
         if (diffDays < 14) return `Il y a ${diffDays} jours`;
       }
-      return dateStr;
+      return dateStr || 'Récent';
     }
 
     if (!pubTime) {
-      return isTodayDate ? "Aujourd'hui" : (dateStr || 'Récent');
+      return "Aujourd'hui";
     }
 
     const now = Date.now();
@@ -751,74 +772,60 @@ window.NewsFeed = (() => {
           {
             id: 'kf-eurusd-1',
             title: 'Divergence monétaire Fed & BCE et différentiel de taux de 150 pb',
-            url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm',
+            url: 'https://fr.tradingeconomics.com/united-states/interest-rate',
             desc: 'La Réserve Fédérale maintient ses taux directeurs à 3,75-4,00 % tandis que la BCE temporise à 2,50 %, consolidant un différentiel de rendement durablement favorable au dollar.',
             enabled: true
           },
           {
             id: 'kf-eurusd-2',
-            title: 'Rapport sur l\'emploi américain (NFP) supérieur aux attentes (06/11)',
-            url: 'https://tradingeconomics.com/united-states/non-farm-payrolls',
-            desc: 'Les créations d\'emplois aux États-Unis publiées vendredi ont confirmé la solidité du marché du travail, tempérant les anticipations de baisse rapide des taux de la Fed et propulsant le Dollar face à l\'Euro.',
+            title: 'Inflation CPI américaine et résilience de l\'emploi (NFP) (12/11)',
+            url: 'https://fr.tradingeconomics.com/united-states/inflation-cpi',
+            desc: 'Les données d\'inflation et d\'emploi aux États-Unis ont confirmé la solidité de l\'économie américaine, tempérant les anticipations de baisse rapide des taux de la Fed et soutenant le Dollar face à l\'Euro.',
             enabled: true
           },
           {
             id: 'kf-eurusd-3',
-            title: 'Maintien des taux de la Banque d\'Angleterre et prudence globale (05/11)',
-            url: 'https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates',
-            desc: 'La BoE a maintenu son taux directeur à 4,75 % avec un discours prudent sur la persistance de l\'inflation des services, maintenant des rendements souverains élevés en Europe.',
-            enabled: true
-          },
-          {
-            id: 'kf-eurusd-4',
-            title: 'Résultats des élections américaines de mi-mandat (04/11)',
-            url: 'https://think.ing.com/articles/rates-spark-us-mid-terms-and-expanding-egb-concerns/',
-            desc: 'Les résultats confirment un Congrès divisé à Washington (Sénat/Chambre), écartant le risque d\'emballement budgétaire et maintenant les rendements obligataires américains stables au profit du Dollar face à l\'Euro.',
+            title: 'Orientation prudente de la BCE face aux tensions budgétaires européennes',
+            url: 'https://www.ecb.europa.eu/mopo/decisions/html/index.fr.html',
+            desc: 'La BCE privilégie une approche réunion par réunion dans un contexte de croissance modérée en Zone Euro et d\'écarts de rendements souverains sous surveillance.',
             enabled: true
           }
         ],
-        // Strictly future catalysts in November 2026 (starting from 12/11 onward)
+        // Strictly current/future catalysts (>= 17/11/2026)
         upcomingEvents: [
-          {
-            id: 'ue-eurusd-nov-1',
-            title: 'Publication de l\'inflation CPI aux États-Unis (12/11)',
-            url: 'https://tradingeconomics.com/united-states/inflation-cpi',
-            desc: 'Donnée déterminante pour évaluer la trajectoire des taux directeurs de la Fed lors de sa réunion de fin d\'année.',
-            enabled: true
-          },
-          {
-            id: 'ue-eurusd-nov-2',
-            title: 'Discours officiel de Jerome Powell (Président Fed) (13/11)',
-            url: 'https://www.federalreserve.gov/newsevents/speeches.htm',
-            desc: 'Prise de parole très attendue sur les perspectives économiques post-NFP et l\'orientation monétaire de la Réserve Fédérale.',
-            enabled: true
-          },
           {
             id: 'ue-eurusd-nov-3',
             title: 'Publication définitive de l\'inflation IPCH en Zone Euro (17/11)',
-            url: 'https://tradingeconomics.com/euro-area/inflation-cpi',
+            url: 'https://fr.tradingeconomics.com/euro-area/inflation-cpi',
             desc: 'Tous les regards sont tournés vers Christine Lagarde pour évaluer le rythme de désinflation des services.',
             enabled: true
           },
           {
             id: 'ue-eurusd-nov-4',
             title: 'Minutes du FOMC de la Réserve Fédérale (18/11)',
-            url: 'https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm',
-            desc: 'Révélation des discussions internes du comité de politique monétaire sur le rythme futur des taux directeurs.',
+            url: 'https://fr.tradingeconomics.com/united-states/interest-rate',
+            desc: 'Révélation des discussions internes du comité de politique monétaire américain sur le rythme futur des taux directeurs.',
             enabled: true
           },
           {
             id: 'ue-eurusd-nov-5',
             title: 'Indices flash PMI d\'activité économique en Zone Euro & États-Unis (20/11)',
-            url: 'https://www.fxstreet.com/economic-calendar',
+            url: 'https://fr.tradingeconomics.com/calendar',
             desc: 'Baromètre avancé de la croissance industrielle et des services de part et d\'autre de l\'Atlantique.',
             enabled: true
           },
           {
             id: 'ue-eurusd-nov-6',
             title: 'Comptes rendus de politique monétaire de la BCE (26/11)',
-            url: 'https://www.ecb.europa.eu/mopo/decisions/html/index.en.html',
-            desc: 'Détail des débats au sein du Conseil des gouverneurs de la BCE sur la trajectoire des baisses de taux.',
+            url: 'https://www.ecb.europa.eu/mopo/decisions/html/index.fr.html',
+            desc: 'Détail des débats au sein du Conseil des gouverneurs de la BCE sur la trajectoire des taux.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurusd-dec-1',
+            title: 'Rapport mensuel sur l\'emploi américain (NFP) (04/12)',
+            url: 'https://fr.tradingeconomics.com/united-states/non-farm-payrolls',
+            desc: 'Indicateur majeur pour le marché du travail américain avant la dernière réunion FOMC de l\'année.',
             enabled: true
           }
         ]
@@ -837,42 +844,21 @@ window.NewsFeed = (() => {
           },
           {
             id: 'kf-eurusd-en-2',
-            title: 'US Non-Farm Payrolls (NFP) Beat Confirms Resilient Labor Market (06/11)',
-            url: 'https://tradingeconomics.com/united-states/non-farm-payrolls',
-            desc: 'US job additions exceeded expectations last Friday, underlining domestic resilience, dampening rapid Fed cut expectations, and lifting the greenback against the Euro.',
+            title: 'US CPI Inflation & Resilient Labor Market (NFP) (12/11)',
+            url: 'https://tradingeconomics.com/united-states/inflation-cpi',
+            desc: 'Recent US inflation and payrolls figures underlined domestic economic resilience, dampening rapid Fed cut expectations and lifting the greenback against the Euro.',
             enabled: true
           },
           {
             id: 'kf-eurusd-en-3',
-            title: 'Bank of England Rate Pause and Restrictive Guidance (05/11)',
-            url: 'https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates',
-            desc: 'The BoE maintained its policy rate at 4.75% with a cautious policy bias due to persistent services inflation, supporting European bond yields.',
-            enabled: true
-          },
-          {
-            id: 'kf-eurusd-en-4',
-            title: 'US Midterm Election Results (04/11)',
-            url: 'https://think.ing.com/articles/rates-spark-us-mid-terms-and-expanding-egb-concerns/',
-            desc: 'Results confirm a divided Congress in Washington, curbing aggressive fiscal expansion risks and anchoring US Treasury yields, preserving Dollar stability against the Euro.',
+            title: 'ECB Cautious Stance Amid Eurozone Fiscal Headwinds',
+            url: 'https://www.ecb.europa.eu/mopo/decisions/html/index.en.html',
+            desc: 'The ECB maintains a data-dependent, meeting-by-meeting approach amid subdued Eurozone industrial momentum and sovereign spread scrutiny.',
             enabled: true
           }
         ],
-        // Strictly future catalysts in November 2026 (starting from 12/11 onward)
+        // Strictly current/future catalysts (>= 17/11/2026)
         upcomingEvents: [
-          {
-            id: 'ue-eurusd-en-nov-1',
-            title: 'US CPI Inflation Release (12/11)',
-            url: 'https://tradingeconomics.com/united-states/inflation-cpi',
-            desc: 'Crucial monthly inflation release shaping Federal Reserve rate expectations heading into the December meeting.',
-            enabled: true
-          },
-          {
-            id: 'ue-eurusd-en-nov-2',
-            title: 'Fed Chair Jerome Powell Keynote Address (13/11)',
-            url: 'https://www.federalreserve.gov/newsevents/speeches.htm',
-            desc: 'Highly anticipated speech regarding post-payrolls macroeconomic momentum and Federal Reserve rate strategy.',
-            enabled: true
-          },
           {
             id: 'ue-eurusd-en-nov-3',
             title: 'Eurozone Final HICP Inflation Data (17/11)',
@@ -900,6 +886,13 @@ window.NewsFeed = (() => {
             url: 'https://www.ecb.europa.eu/mopo/decisions/html/index.en.html',
             desc: 'Detailed record of Governing Council deliberations and forward policy considerations.',
             enabled: true
+          },
+          {
+            id: 'ue-eurusd-en-dec-1',
+            title: 'US Non-Farm Payrolls (NFP) Release (04/12)',
+            url: 'https://tradingeconomics.com/united-states/non-farm-payrolls',
+            desc: 'Crucial US labor market scorecard ahead of the December Federal Reserve policy decision.',
+            enabled: true
           }
         ]
       }
@@ -913,31 +906,31 @@ window.NewsFeed = (() => {
           {
             id: 'kf-eurchf-1',
             title: 'Statut de valeur refuge du franc suisse et tensions budgétaires européennes',
-            url: 'https://www.snb.ch/en/',
+            url: 'https://www.snb.ch/fr/',
             desc: 'Le franc suisse reste particulièrement recherché par les investisseurs internationaux face à l\'instabilité politique et aux déficits croissants en Europe.',
             enabled: true
           },
           {
             id: 'kf-eurchf-2',
             title: 'Inflation suisse proche de 0 % et différentiel de taux de 250 pb avec la BCE',
-            url: 'https://tradingeconomics.com/switzerland/interest-rate',
+            url: 'https://fr.tradingeconomics.com/switzerland/interest-rate',
             desc: 'Bien que le taux directeur de la BNS soit fixé à 0 %, le différentiel de rendement ne parvient pas à affaiblir durablement la devise helvétique.',
             enabled: true
           }
         ],
         upcomingEvents: [
           {
-            id: 'ue-eurchf-nov-1',
-            title: 'Discours officiel de Martin Schlegel (Président BNS) (12/11)',
-            url: 'https://www.snb.ch/en/',
-            desc: 'Clarification sur d\'éventuelles interventions directes sur le marché des changes pour freiner la force du CHF.',
+            id: 'ue-eurchf-nov-2',
+            title: 'Indicateurs d\'activité PMI Zone Euro & Suisse (20/11)',
+            url: 'https://fr.tradingeconomics.com/switzerland/inflation-cpi',
+            desc: 'Toute nouvelle dégradation manufacturière en zone euro renforcera les flux de repli vers le franc suisse.',
             enabled: true
           },
           {
-            id: 'ue-eurchf-nov-2',
-            title: 'Indicateurs d\'activité PMI Zone Euro & Suisse (20/11)',
-            url: 'https://tradingeconomics.com/switzerland/inflation-cpi',
-            desc: 'Toute nouvelle dégradation manufacturière en zone euro renforcera les flux de repli vers le franc suisse.',
+            id: 'ue-eurchf-dec-1',
+            title: 'Décision de politique monétaire de la BNS (10/12)',
+            url: 'https://www.snb.ch/fr/',
+            desc: 'Ajustement des prévisions d\'inflation suisses et orientations sur les interventions de change.',
             enabled: true
           }
         ]
@@ -964,17 +957,17 @@ window.NewsFeed = (() => {
         ],
         upcomingEvents: [
           {
-            id: 'ue-eurchf-en-nov-1',
-            title: 'SNB Chairman Martin Schlegel Keynote Address (12/11)',
-            url: 'https://www.snb.ch/en/',
-            desc: 'Clarification regarding active foreign exchange interventions to prevent excessive franc appreciation.',
-            enabled: true
-          },
-          {
             id: 'ue-eurchf-en-nov-2',
             title: 'Eurozone & Swiss Flash PMI Business Activity (20/11)',
             url: 'https://tradingeconomics.com/switzerland/inflation-cpi',
             desc: 'Further industrial softness in the Eurozone will reinforce defensive safe-haven capital allocations into CHF.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurchf-en-dec-1',
+            title: 'SNB Monetary Policy Assessment (10/12)',
+            url: 'https://www.snb.ch/en/',
+            desc: 'Updated Swiss CPI projections and guidance on potential FX market interventions.',
             enabled: true
           }
         ]
@@ -989,38 +982,38 @@ window.NewsFeed = (() => {
           {
             id: 'kf-eurpln-1',
             title: 'Pause monétaire de la NBP à 5,75 % et attractivité du carry trade (06/11)',
-            url: 'https://nbp.pl/en/monetary-policy/mpc-schedule/',
+            url: 'https://fr.tradingeconomics.com/poland/interest-rate',
             desc: 'Le gouverneur Adam Glapiński maintient les taux directeurs polonais à 5,75 %, conférant au zloty une prime de portage solide.',
             enabled: true
           },
           {
             id: 'kf-eurpln-2',
-            title: 'Déblocage des fonds de relance européens et consommation robuste',
-            url: 'https://tradingeconomics.com/poland/interest-rate',
+            title: 'PIB polonais au T3 et résilience de la consommation intérieure (14/11)',
+            url: 'https://fr.tradingeconomics.com/poland/gdp-growth',
             desc: 'Les flux d\'investissements européens et la consommation des ménages amortissent l\'impact du ralentissement industriel allemand.',
             enabled: true
           }
         ],
         upcomingEvents: [
           {
-            id: 'ue-eurpln-nov-2',
-            title: 'Publication du PIB de la Pologne au 3ème trimestre (14/11)',
-            url: 'https://tradingeconomics.com/poland/gdp-growth',
-            desc: 'Baromètre clé confirmant la résilience de l\'économie polonaise face aux difficultés manufacturières européennes.',
-            enabled: true
-          },
-          {
             id: 'ue-eurpln-nov-3',
             title: 'Publication définitive de l\'inflation IPCH en Zone Euro (17/11)',
-            url: 'https://tradingeconomics.com/euro-area/inflation-cpi',
+            url: 'https://fr.tradingeconomics.com/euro-area/inflation-cpi',
             desc: 'Tous les regards sont tournés vers Christine Lagarde pour évaluer le rythme de désinflation en Europe centrale et occidentale.',
             enabled: true
           },
           {
             id: 'ue-eurpln-nov-4',
             title: 'Production industrielle et ventes au détail en Pologne (21/11)',
-            url: 'https://tradingeconomics.com/poland/inflation-cpi',
+            url: 'https://fr.tradingeconomics.com/poland/inflation-cpi',
             desc: 'Indicateurs mensuels d\'activité pour confirmer la dynamique de croissance du zloty en fin d\'année.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurpln-dec-1',
+            title: 'Décision de politique monétaire de la NBP (02/12)',
+            url: 'https://fr.tradingeconomics.com/poland/interest-rate',
+            desc: 'Prochaine réunion du Conseil de politique monétaire polonais sur le maintien des taux à 5,75 %.',
             enabled: true
           }
         ]
@@ -1039,20 +1032,13 @@ window.NewsFeed = (() => {
           },
           {
             id: 'kf-eurpln-en-2',
-            title: 'EU Recovery Fund Inflows and Strong Domestic Demand',
-            url: 'https://tradingeconomics.com/poland/interest-rate',
+            title: 'Poland Q3 GDP Resilience & Strong Domestic Demand (14/11)',
+            url: 'https://tradingeconomics.com/poland/gdp-growth',
             desc: 'Disbursement of EU cohesion funds and resilient consumer spending help decouple Poland from broader euro-area industrial weakness.',
             enabled: true
           }
         ],
         upcomingEvents: [
-          {
-            id: 'ue-eurpln-en-nov-2',
-            title: 'Poland Q3 GDP Growth Flash Estimate (14/11)',
-            url: 'https://tradingeconomics.com/poland/gdp-growth',
-            desc: 'Crucial growth barometer testing whether Polish domestic demand can sustain outperformance over Germany.',
-            enabled: true
-          },
           {
             id: 'ue-eurpln-en-nov-3',
             title: 'Eurozone Final HICP Inflation Data (17/11)',
@@ -1066,6 +1052,13 @@ window.NewsFeed = (() => {
             url: 'https://tradingeconomics.com/poland/inflation-cpi',
             desc: 'Monthly hard data indicators guiding late-year policy positioning for the Polish central bank.',
             enabled: true
+          },
+          {
+            id: 'ue-eurpln-en-dec-1',
+            title: 'NBP Monetary Policy Rate Decision (02/12)',
+            url: 'https://nbp.pl/en/monetary-policy/mpc-schedule/',
+            desc: 'Key rate review testing whether Poland retains its 5.75% carry advantage heading into 2027.',
+            enabled: true
           }
         ]
       }
@@ -1078,32 +1071,32 @@ window.NewsFeed = (() => {
         keyFactors: [
           {
             id: 'kf-usdhuf-1',
-            title: 'Taux directeur MNB à 5,50 % et négociations budgétaires à Budapest',
-            url: 'https://tradingeconomics.com/hungary/interest-rate',
-            desc: 'La banque centrale hongroise marque une pause pour défendre le forint, très sensible aux sorties de capitaux et aux tensions avec Bruxelles.',
+            title: 'Taux directeur MNB à 5,50 % et rapport CPI d\'octobre (11/11)',
+            url: 'https://fr.tradingeconomics.com/hungary/inflation-cpi',
+            desc: 'La banque centrale hongroise maintient une posture prudente pour défendre le forint face aux pressions inflationnistes et aux négociations avec Bruxelles.',
             enabled: true
           },
           {
             id: 'kf-usdhuf-2',
             title: 'Facture énergétique et vulnérabilité du compte courant hongrois',
-            url: 'https://tradingeconomics.com/hungary/gdp-growth',
+            url: 'https://fr.tradingeconomics.com/hungary/gdp-growth',
             desc: 'La dépendance aux importations de pétrole et de gaz accroît la sensibilité du forint face aux mouvements du dollar américain.',
             enabled: true
           }
         ],
         upcomingEvents: [
           {
-            id: 'ue-usdhuf-nov-1',
-            title: 'Rapport mensuel d\'inflation CPI en Hongrie (11/11)',
-            url: 'https://tradingeconomics.com/hungary/inflation-cpi',
-            desc: 'Tout rebond des prix alimentaires ou énergétiques contraindra la MNB à prolonger le gel de ses taux directeurs.',
+            id: 'ue-usdhuf-nov-2',
+            title: 'Réunion de politique monétaire de la MNB (24/11)',
+            url: 'https://fr.tradingeconomics.com/hungary/interest-rate',
+            desc: 'Toute velléité d\'assouplissement prématuré risquerait de déclencher un nouvel accès de faiblesse sur le forint.',
             enabled: true
           },
           {
-            id: 'ue-usdhuf-nov-2',
-            title: 'Réunion de politique monétaire de la MNB (24/11)',
-            url: 'https://tradingeconomics.com/hungary/interest-rate',
-            desc: 'Toute velléité d\'assouplissement prématuré risquerait de déclencher un nouvel accès de faiblesse sur le forint.',
+            id: 'ue-usdhuf-dec-1',
+            title: 'Publication mensuelle de l\'inflation CPI en Hongrie (08/12)',
+            url: 'https://fr.tradingeconomics.com/hungary/inflation-cpi',
+            desc: 'Indicateur déterminant pour la trajectoire des taux de la MNB en fin d\'année.',
             enabled: true
           }
         ]
@@ -1115,9 +1108,9 @@ window.NewsFeed = (() => {
         keyFactors: [
           {
             id: 'kf-usdhuf-en-1',
-            title: 'MNB Base Rate at 5.50% and Budapest Fiscal Negotiations',
-            url: 'https://tradingeconomics.com/hungary/interest-rate',
-            desc: 'The National Bank of Hungary pauses rate cuts to protect the forint amid persistent fiscal deficit scrutiny and EU funding talks.',
+            title: 'MNB Base Rate at 5.50% and October CPI Print (11/11)',
+            url: 'https://tradingeconomics.com/hungary/inflation-cpi',
+            desc: 'The National Bank of Hungary maintains cautious policy rates to protect the forint amid persistent fiscal deficit scrutiny and EU funding talks.',
             enabled: true
           },
           {
@@ -1130,17 +1123,17 @@ window.NewsFeed = (() => {
         ],
         upcomingEvents: [
           {
-            id: 'ue-usdhuf-en-nov-1',
-            title: 'Hungary Monthly CPI Inflation Release (11/11)',
-            url: 'https://tradingeconomics.com/hungary/inflation-cpi',
-            desc: 'Any rebound in core or food prices will compel the MNB to maintain restrictive monetary rates longer.',
-            enabled: true
-          },
-          {
             id: 'ue-usdhuf-en-nov-2',
             title: 'National Bank of Hungary (MNB) Policy Meeting (24/11)',
             url: 'https://tradingeconomics.com/hungary/interest-rate',
             desc: 'Any dovish surprise would risk triggering a sharp sell-off in the forint against the dollar.',
+            enabled: true
+          },
+          {
+            id: 'ue-usdhuf-en-dec-1',
+            title: 'Hungary Monthly CPI Inflation Release (08/12)',
+            url: 'https://tradingeconomics.com/hungary/inflation-cpi',
+            desc: 'Crucial inflation scorecard guiding year-end MNB monetary policy decisions.',
             enabled: true
           }
         ]
@@ -1155,31 +1148,31 @@ window.NewsFeed = (() => {
           {
             id: 'kf-czkusd-1',
             title: 'Fin du cycle de baisse des taux par la CNB (Banque Nationale Tchèque) à 3,75 %',
-            url: 'https://tradingeconomics.com/czech-republic/interest-rate',
+            url: 'https://fr.tradingeconomics.com/czech-republic/interest-rate',
             desc: 'La CNB stabilise ses taux réels en territoire restrictif pour consolider la couronne face aux incertitudes mondiales.',
             enabled: true
           },
           {
             id: 'kf-czkusd-2',
-            title: 'Excédent de la balance commerciale tchèque et normalisation automobile',
-            url: 'https://tradingeconomics.com/czech-republic/gdp-growth',
-            desc: 'Le redressement des chaînes d\'approvisionnement soutient la production industrielle à Prague et amortit le choc dollar.',
+            title: 'Inflation CPI tchèque (10/11) et excédent commercial automobile',
+            url: 'https://fr.tradingeconomics.com/czech-republic/inflation-cpi',
+            desc: 'La persistance des prix dans les services et la bonne tenue des exportations soutiennent la politique restrictive de Prague.',
             enabled: true
           }
         ],
         upcomingEvents: [
           {
-            id: 'ue-czkusd-nov-1',
-            title: 'Publication de l\'inflation CPI en République tchèque (10/11)',
-            url: 'https://tradingeconomics.com/czech-republic/inflation-cpi',
-            desc: 'Mesure de l\'impact des prix des services sur la trajectoire des taux de la Banque Nationale Tchèque.',
+            id: 'ue-czkusd-nov-2',
+            title: 'Conférence de presse et décision sur les taux de la CNB (26/11)',
+            url: 'https://fr.tradingeconomics.com/czech-republic/interest-rate',
+            desc: 'Orientation des gouverneurs tchèques sur la gestion active de la stabilité du taux de change.',
             enabled: true
           },
           {
-            id: 'ue-czkusd-nov-2',
-            title: 'Conférence de presse et décision sur les taux de la CNB (26/11)',
-            url: 'https://tradingeconomics.com/czech-republic/interest-rate',
-            desc: 'Orientation des gouverneurs tchèques sur la gestion active de la stabilité du taux de change.',
+            id: 'ue-czkusd-dec-1',
+            title: 'Publication de l\'inflation CPI en République tchèque (10/12)',
+            url: 'https://fr.tradingeconomics.com/czech-republic/inflation-cpi',
+            desc: 'Mesure de la trajectoire des prix à la consommation pour le début de l\'année 2027.',
             enabled: true
           }
         ]
@@ -1198,25 +1191,25 @@ window.NewsFeed = (() => {
           },
           {
             id: 'kf-czkusd-en-2',
-            title: 'Czech Trade Surplus and Automotive Export Recovery',
-            url: 'https://tradingeconomics.com/czech-republic/gdp-growth',
-            desc: 'Supply chain normalization and trade balance surplus support the koruna against dollar headwinds.',
+            title: 'Czech CPI Inflation Print (10/11) & Automotive Export Surplus',
+            url: 'https://tradingeconomics.com/czech-republic/inflation-cpi',
+            desc: 'Sticky services inflation and solid trade balance support the koruna against dollar headwinds.',
             enabled: true
           }
         ],
         upcomingEvents: [
           {
-            id: 'ue-czkusd-en-nov-1',
-            title: 'Czech CPI Inflation Report (10/11)',
-            url: 'https://tradingeconomics.com/czech-republic/inflation-cpi',
-            desc: 'Key gauge testing services price stickiness and informing CNB policy positioning.',
-            enabled: true
-          },
-          {
             id: 'ue-czkusd-en-nov-2',
             title: 'CNB Monetary Policy Meeting & Economic Forecast (26/11)',
             url: 'https://tradingeconomics.com/czech-republic/interest-rate',
             desc: 'Board forward guidance regarding active exchange rate stabilization and 2027 macroeconomic targets.',
+            enabled: true
+          },
+          {
+            id: 'ue-czkusd-en-dec-1',
+            title: 'Czech CPI Inflation Report (10/12)',
+            url: 'https://tradingeconomics.com/czech-republic/inflation-cpi',
+            desc: 'Key price gauge informing early 2027 CNB monetary positioning.',
             enabled: true
           }
         ]
@@ -1231,38 +1224,38 @@ window.NewsFeed = (() => {
           {
             id: 'kf-eurgbp-1',
             title: 'Statu quo de la Banque d\'Angleterre à 4,75 % face à l\'inflation des services (05/11)',
-            url: 'https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates',
-            desc: 'La BoE a maintenu le 5 novembre son taux directeur à 4,75 %, signalant une approche prudente face à la résistance des prix intérieurs.',
+            url: 'https://fr.tradingeconomics.com/united-kingdom/interest-rate',
+            desc: 'La BoE maintient son taux directeur à 4,75 %, signalant une approche prudente face à la résistance des prix intérieurs.',
             enabled: true
           },
           {
             id: 'kf-eurgbp-2',
-            title: 'Présentation du budget britannique et surveillance des rendements des Gilts',
-            url: 'https://tradingeconomics.com/united-kingdom/interest-rate',
-            desc: 'Les arbitrages budgétaires à Londres et les émissions obligataires dictent les flux institutionnels sur la livre.',
+            title: 'PIB britannique au T3 (14/11) et dynamique des rendements des Gilts',
+            url: 'https://fr.tradingeconomics.com/united-kingdom/gdp-growth',
+            desc: 'Les arbitrages budgétaires à Londres et les chiffres de croissance dictent les flux institutionnels sur la livre.',
             enabled: true
           }
         ],
         upcomingEvents: [
           {
-            id: 'ue-eurgbp-nov-1',
-            title: 'Publication du PIB britannique préliminaire au 3ème trimestre (14/11)',
-            url: 'https://tradingeconomics.com/united-kingdom/gdp-growth',
-            desc: 'Indicateur clé mesurant la dynamique de croissance du Royaume-Uni après les mesures fiscales du Trésor.',
-            enabled: true
-          },
-          {
             id: 'ue-eurgbp-nov-2',
             title: 'Publication de l\'inflation CPI au Royaume-Uni (18/11)',
-            url: 'https://tradingeconomics.com/united-kingdom/inflation-cpi',
+            url: 'https://fr.tradingeconomics.com/united-kingdom/inflation-cpi',
             desc: 'Un chiffre supérieur aux attentes confortera la fermeté de la livre face à la monnaie unique.',
             enabled: true
           },
           {
             id: 'ue-eurgbp-nov-3',
             title: 'Indices Flash PMI Royaume-Uni & Zone Euro (20/11)',
-            url: 'https://www.fxstreet.com/economic-calendar',
+            url: 'https://fr.tradingeconomics.com/calendar',
             desc: 'Baromètre avancé testant la résilience de l\'activité manufacturière et tertiaire britannique.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurgbp-dec-1',
+            title: 'Décision de politique monétaire de la Banque d\'Angleterre (17/12)',
+            url: 'https://fr.tradingeconomics.com/united-kingdom/interest-rate',
+            desc: 'Dernier comité MPC de l\'année pour la BoE sur la trajectoire des taux en 2027.',
             enabled: true
           }
         ]
@@ -1281,20 +1274,13 @@ window.NewsFeed = (() => {
           },
           {
             id: 'kf-eurgbp-en-2',
-            title: 'UK Autumn Budget and Gilt Market Dynamics',
-            url: 'https://tradingeconomics.com/united-kingdom/interest-rate',
-            desc: 'Fiscal policy decisions in London and government bond issuance patterns steer institutional flows on the Pound.',
+            title: 'UK Q3 GDP Release (14/11) and Gilt Market Dynamics',
+            url: 'https://tradingeconomics.com/united-kingdom/gdp-growth',
+            desc: 'Fiscal policy decisions in London and growth momentum steer institutional flows on the Pound.',
             enabled: true
           }
         ],
         upcomingEvents: [
-          {
-            id: 'ue-eurgbp-en-nov-1',
-            title: 'UK Preliminary Q3 GDP Growth Release (14/11)',
-            url: 'https://tradingeconomics.com/united-kingdom/gdp-growth',
-            desc: 'Primary indicator measuring British economic growth resilience following the Chancellor\'s budget statement.',
-            enabled: true
-          },
           {
             id: 'ue-eurgbp-en-nov-2',
             title: 'UK CPI Inflation Release (18/11)',
@@ -1307,6 +1293,13 @@ window.NewsFeed = (() => {
             title: 'UK & Eurozone Flash PMI Business Activity (20/11)',
             url: 'https://www.fxstreet.com/economic-calendar',
             desc: 'Transatlantic flash indicators tracking private sector output across Britain and the continent.',
+            enabled: true
+          },
+          {
+            id: 'ue-eurgbp-en-dec-1',
+            title: 'Bank of England MPC Rate Decision (17/12)',
+            url: 'https://www.bankofengland.co.uk/monetary-policy/upcoming-mpc-dates',
+            desc: 'Final BoE policy meeting of 2026 guiding Sterling rate expectations into Q1 2027.',
             enabled: true
           }
         ]
@@ -1436,7 +1429,7 @@ window.NewsFeed = (() => {
         } catch (_) {}
       }
 
-      // 3. Client-side live enrichment: fetch Yahoo Finance CORS API directly in the browser
+      // 3. Client-side live enrichment: fetch Yahoo Finance CORS API directly in the browser (strictly <= 14 days & FX/Macro only)
       let clientLiveItems = [];
       try {
         const yTickers = ['EURUSD=X', 'CL=F', '^TNX', 'EURGBP=X'];
@@ -1447,17 +1440,21 @@ window.NewsFeed = (() => {
         ));
 
         const now = Date.now();
-        const todayStr = getTodayDateStr();
-        const todayShort = todayStr.slice(0, 5);
+        const MAX_AGE_MS = 14 * 24 * 3600 * 1000;
+        const fxRelevantRe = /\b(euro|dollar|eur|usd|gbp|chf|pln|huf|czk|forex|fx|currency|currencies|fed|ecb|boe|snb|powell|lagarde|inflation|cpi|payrolls|nfp|rate|rates|yield|treasury|oil|brent|wti|opec|tariff)\b/i;
 
         yResults.forEach(r => {
           if (r.status === 'fulfilled' && r.value && Array.isArray(r.value.news)) {
             r.value.news.forEach(n => {
-              if (!n.title || !n.link) return;
-              const pTime = n.providerPublishTime ? n.providerPublishTime * 1000 : now;
+              if (!n.title || !n.link || !n.providerPublishTime) return;
+              const pTime = n.providerPublishTime * 1000;
+              if (now - pTime > MAX_AGE_MS || pTime - now > 24 * 3600 * 1000) return;
+              if (!fxRelevantRe.test(n.title)) return;
+
               const d = new Date(pTime);
-              const artDate = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-              const isToday = (artDate === todayStr) || (artDate.slice(0, 5) === todayShort);
+              const artDate = d.toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric' });
+              const artIso = d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+              const isToday = isArticleToday(pTime, artDate, artIso);
 
               clientLiveItems.push({
                 id: 'yahoo-' + (n.uuid || Math.random().toString(36).substr(2, 7)),
@@ -1472,6 +1469,7 @@ window.NewsFeed = (() => {
                 isToday: isToday,
                 isKeyDossier: !isToday,
                 pubTime: pTime,
+                isoDate: artIso,
                 dateStr: artDate,
                 timeAgo: computeDynamicTimeAgo(pTime, artDate),
                 type: isToday ? 'today' : 'key_dossier'
@@ -1481,23 +1479,23 @@ window.NewsFeed = (() => {
         });
       } catch (_) {}
 
-      // Combine sources: live articles + client live items + curated master items
+      // Combine sources: live articles + client live items (strictly <= 14 days old)
       const combined = [];
       const seen = new Set();
+      const MAX_AGE_MS = 14 * 24 * 3600 * 1000;
+      const nowMs = Date.now();
 
       const addArticle = (a) => {
-        if (!a || !a.title) return;
+        if (!a || !a.title || !a.link) return;
+        // Strictly reject articles older than 14 days
+        if (a.pubTime && (nowMs - a.pubTime > MAX_AGE_MS)) return;
+
         const norm = a.title.toLowerCase().trim().slice(0, 45);
         if (seen.has(norm)) return;
         seen.add(norm);
 
         const pairs = Array.isArray(a.pairs) && a.pairs.length > 0 ? a.pairs : ['EUR/USD'];
-        const todayStr = getTodayDateStr();
-        const todayFullYear = `${todayStr}/${new Date().getFullYear()}`;
-        const isToday = (a.dateStr === todayStr) || 
-                        (a.dateStr === todayFullYear) ||
-                        (a.dateStr && a.dateStr.startsWith(todayStr)) ||
-                        (a.pubTime && (Date.now() - a.pubTime < 24 * 3600 * 1000) && new Date(a.pubTime).getDate() === new Date().getDate());
+        const isToday = isArticleToday(a.pubTime, a.dateStr, a.isoDate);
 
         combined.push({
           ...a,
@@ -1508,12 +1506,14 @@ window.NewsFeed = (() => {
         });
       };
 
-      // Priority 1: Direct live client & server scraped articles
-      (clientLiveItems || []).forEach(addArticle);
+      // Priority 1: Live server-scraped & static JSON articles (clean, verified, recent)
       (liveArticles || []).forEach(addArticle);
+      (clientLiveItems || []).forEach(addArticle);
 
-      // Priority 2: Curated master items (preserving their true publication date)
-      (curatedItems || []).forEach(addArticle);
+      // Priority 2: Curated fallback ONLY if live feed returned nothing
+      if (combined.length === 0) {
+        (curatedItems || []).forEach(addArticle);
+      }
 
       if (combined.length > 0) {
         state.articles = combined.sort((a, b) => {
@@ -2722,7 +2722,7 @@ Kevin Saudubray`;
         } : {
           id: 'kf-eurusd-fr-nfp',
           title: 'Rapport sur l\'emploi américain (NFP) supérieur aux attentes (06/11)',
-          url: 'https://tradingeconomics.com/united-states/non-farm-payrolls',
+          url: 'https://fr.tradingeconomics.com/united-states/non-farm-payrolls',
           desc: 'Les créations d\'emplois aux États-Unis publiées vendredi ont confirmé la solidité du marché du travail, tempérant les anticipations de baisse rapide des taux de la Fed et propulsant le Dollar face à l\'Euro.',
           enabled: true
         });
@@ -3027,7 +3027,7 @@ Kevin Saudubray`;
       state.email.keyFactors.push({
         id: 'kf-' + Date.now(),
         title: isEn ? 'New key driver' : 'Nouveau facteur clé',
-        url: 'https://tradingeconomics.com/calendar',
+        url: isEn ? 'https://tradingeconomics.com/calendar' : 'https://fr.tradingeconomics.com/calendar',
         desc: isEn ? 'Factual explanation of direct market impact on the currency pair.' : 'Explication factuelle de l\'impact direct sur le taux de change.',
         enabled: true
       });
@@ -3075,7 +3075,7 @@ Kevin Saudubray`;
       state.email.upcomingEvents.push({
         id: 'ue-' + Date.now(),
         title: isEn ? 'Upcoming catalyst (DD/MM)' : 'Nouvel événement (JJ/MM)',
-        url: 'https://tradingeconomics.com/calendar',
+        url: isEn ? 'https://tradingeconomics.com/calendar' : 'https://fr.tradingeconomics.com/calendar',
         desc: isEn ? 'Anticipated 1-line impact on the currency pair.' : 'Impact anticipé en une ligne sur la paire de devises.',
         enabled: true
       });
