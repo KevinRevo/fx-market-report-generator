@@ -375,27 +375,39 @@ async function fetchLiveNews(pairOrType) {
 // ─── Institutional Press Review Aggregator (FR & EN) ───
 let pressCache = { data: null, timestamp: 0 };
 
-const PRESS_FEEDS = [
-  // English Trusted Sources (reuters, ing, fxempire, theguardian, sky.com, investing, fxstreet, usnews)
-  { id: 'reuters', name: 'Reuters', lang: 'en', defCat: 'FX', url: 'https://news.google.com/rss/search?q=site:reuters.com+(forex+OR+currency+OR+dollar+OR+%22central+bank%22)+when:3d&hl=en-US&gl=US&ceid=US:en' },
-  { id: 'ing', name: 'ING Think', lang: 'en', defCat: 'Banques Centrales', url: 'https://think.ing.com/rss' },
-  { id: 'fxempire', name: 'FX Empire', lang: 'en', defCat: 'FX', url: 'https://news.google.com/rss/search?q=site:fxempire.com+(forex+OR+dollar+OR+eurusd)+when:3d&hl=en-US&gl=US&ceid=US:en' },
-  { id: 'theguardian_biz', name: 'The Guardian (Business)', lang: 'en', defCat: 'Macro', url: 'https://www.theguardian.com/business/rss' },
-  { id: 'theguardian_world', name: 'The Guardian (World)', lang: 'en', defCat: 'Géopolitique', url: 'https://www.theguardian.com/world/rss' },
-  { id: 'sky_biz', name: 'Sky News (Business)', lang: 'en', defCat: 'Macro', url: 'https://feeds.skynews.com/feeds/rss/business.xml' },
-  { id: 'sky_world', name: 'Sky News (World)', lang: 'en', defCat: 'Géopolitique', url: 'https://feeds.skynews.com/feeds/rss/world.xml' },
-  { id: 'investing_en', name: 'Investing.com', lang: 'en', defCat: 'Macro', url: 'https://www.investing.com/rss/news_1.rss' },
-  { id: 'fxstreet', name: 'FXStreet', lang: 'en', defCat: 'FX', url: 'https://www.fxstreet.com/rss/news' },
-  { id: 'usnews', name: 'US News', lang: 'en', defCat: 'Macro', url: 'https://www.usnews.com/rss/money' },
+const MAX_AGE_MS = 14 * 24 * 3600 * 1000;
 
-  // French Trusted Sources (les echos, le monde, le figaro, investing fr, bfm)
-  { id: 'lesechos', name: 'Les Echos', lang: 'fr', defCat: 'FX', url: 'https://news.google.com/rss/search?q=site:lesechos.fr+(devises+OR+dollar+OR+euro+OR+bce+OR+geopolitique)+when:3d&hl=fr&gl=FR&ceid=FR:fr' },
-  { id: 'lemonde_eco', name: 'Le Monde (Éco)', lang: 'fr', defCat: 'Macro', url: 'https://www.lemonde.fr/economie/rss_full.xml' },
-  { id: 'lemonde_inter', name: 'Le Monde (International)', lang: 'fr', defCat: 'Géopolitique', url: 'https://www.lemonde.fr/international/rss_full.xml' },
-  { id: 'lefigaro_eco', name: 'Le Figaro Économie', lang: 'fr', defCat: 'Macro', url: 'https://www.lefigaro.fr/rss/figaro_economie.xml' },
-  { id: 'investing_fr', name: 'Investing.com (FR)', lang: 'fr', defCat: 'Macro', url: 'https://fr.investing.com/rss/news_1.rss' },
-  { id: 'bfm_bourse', name: 'BFM Business', lang: 'fr', defCat: 'Macro', url: 'https://news.google.com/rss/search?q=site:bfmtv.com/economie+(bourse+OR+devises+OR+taux+OR+petrole)+when:3d&hl=fr&gl=FR&ceid=FR:fr' }
+const PRESS_FEEDS = [
+  // French Trusted FX & Macro Sources
+  { id: 'investing_fr_fx', name: 'Investing.com (FR)', lang: 'fr', defCat: 'FX & Devises', strictFilter: false, url: 'https://fr.investing.com/rss/news_1.rss' },
+  { id: 'investing_fr_ana', name: 'Investing.com (FR)', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://fr.investing.com/rss/market_overview.rss' },
+  { id: 'investing_fr_comm', name: 'Investing.com (FR)', lang: 'fr', defCat: 'Énergie & Pétrole', strictFilter: true, url: 'https://fr.investing.com/rss/news_11.rss' },
+  { id: 'investing_fr_eco', name: 'Investing.com (FR)', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://fr.investing.com/rss/news_14.rss' },
+  { id: 'bfm_eco', name: 'BFM Business', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://www.bfmtv.com/rss/economie/' },
+  { id: 'lefigaro_eco', name: 'Le Figaro Économie', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://www.lefigaro.fr/rss/figaro_economie.xml' },
+  { id: 'lemonde_eco', name: 'Le Monde (Éco)', lang: 'fr', defCat: 'Macroéconomie', strictFilter: true, url: 'https://www.lemonde.fr/economie/rss_full.xml' },
+
+  // English Trusted FX & Macro Sources
+  { id: 'fxstreet', name: 'FXStreet', lang: 'en', defCat: 'FX & Devises', strictFilter: false, url: 'https://www.fxstreet.com/rss/news' },
+  { id: 'ing', name: 'ING Think', lang: 'en', defCat: 'Banques Centrales', strictFilter: true, url: 'https://think.ing.com/rss' },
+  { id: 'investing_en', name: 'Investing.com', lang: 'en', defCat: 'FX & Devises', strictFilter: false, url: 'https://www.investing.com/rss/news_1.rss' },
+  { id: 'ecb_press', name: 'BCE / ECB', lang: 'en', defCat: 'Banques Centrales', strictFilter: false, url: 'https://www.ecb.europa.eu/rss/press.html' },
+  { id: 'fed_press', name: 'Federal Reserve', lang: 'en', defCat: 'Banques Centrales', strictFilter: false, url: 'https://www.federalreserve.gov/feeds/press_all.xml' },
+  { id: 'theguardian_biz', name: 'The Guardian (Business)', lang: 'en', defCat: 'Macroéconomie', strictFilter: true, url: 'https://www.theguardian.com/business/rss' },
+  { id: 'sky_biz', name: 'Sky News (Business)', lang: 'en', defCat: 'Macroéconomie', strictFilter: true, url: 'https://feeds.skynews.com/feeds/rss/business.xml' }
 ];
+
+function isRelevantFxMacro(title, desc, strictFilter) {
+  const text = ((title || '') + ' ' + (desc || '')).toLowerCase();
+  const blacklist = /\b(bitcoin|ethereum|solana|dogecoin|xrp|memecoin|altcoin|crypto|nft|shiba|cardano|migrants?|rwanda|présidentielle 2027|football|ligue 1|rugby|tennis|cinema|cinéma|netflix|spotify|assassinat|procès|meurtre|explosion|journaliste|immobilier locatif|assurance-vie|livret a|retraite par|smic|allocation|grève sncf|airbus|boeing|iphone|nvidia|apple|tesla|amazon|google|meta|microsoft|open ?ai|chatgpt|casino|kretinsky)\b/i;
+  const hasExplicitFxOrCentralBank = /\b(eur\/usd|eurusd|eur\/chf|eurchf|eur\/gbp|eurgbp|eur\/pln|eurpln|usd\/pln|usdpln|usd\/huf|usdhuf|czk\/usd|czkusd|chf\/usd|chfusd|gbp\/usd|gbpusd|forex|taux de change|devises?|exchange rate|dxy|dollar index|fed\b|fomc|bce\b|ecb\b|bns\b|snb\b|boe\b|bank of england|banque d'angleterre|nbp\b|mnb\b|cnb\b|powell|lagarde|politique monétaire|monetary policy|taux directeurs?|interest rate)\b/i.test(text);
+
+  if (blacklist.test(text) && !hasExplicitFxOrCentralBank) return false;
+  if (!strictFilter) return true;
+
+  const fxMacroRegex = /\b(euro|dollar|usd|eur|chf|gbp|pln|huf|czk|zloty|forint|koruna|couronne tchèque|franc suisse|livre sterling|sterling|yen|jpy|devise|devises|forex|fx|taux de change|exchange rate|fed|fomc|bce|ecb|bns|snb|boe|nbp|mnb|cnb|banque centrale|central bank|powell|lagarde|taux directeurs?|interest rate|rate cut|rate hike|inflation|cpi|ipch|hicp|pce|pib|gdp|pmi|emploi américain|payrolls|nfp|retail sales|ventes au détail|obligataire|treasury|yield|rendement|spread|déficit|dette souveraine|sovereign debt|brent|wti|pétrole|crude oil|opec|opep|tarifs?|droits de douane|trade war|geopolitic|géopolitique)\b/i;
+  return fxMacroRegex.test(text);
+}
 
 function cleanHtml(str) {
   if (!str) return '';
@@ -498,7 +510,7 @@ async function fetchPressReview() {
     try {
       const res = await fetch(feed.url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-        signal: AbortSignal.timeout(4500)
+        signal: AbortSignal.timeout(6500)
       });
       if (!res.ok) return;
 
@@ -508,36 +520,44 @@ async function fetchPressReview() {
         return m ? m[1].trim() : '';
       };
 
-      const items = xml.match(/<item>[\s\S]*?<\/item>/g) || [];
-      items.slice(0, 15).forEach(it => {
+      const todayIso = new Date(now).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+      const items = xml.match(/<item[\s\S]*?>[\s\S]*?<\/item>/g) || [];
+      items.slice(0, 25).forEach(it => {
         let title = cleanHtml(grab(it, 'title'));
-        let link = grab(it, 'link');
+        let link = grab(it, 'link').replace(/^<!\[CDATA\[/, '').replace(/\]\]>$/, '').trim();
         let desc = cleanHtml(grab(it, 'description'));
-        let pubDateStr = grab(it, 'pubDate');
+        let pubDateStr = grab(it, 'pubDate') || grab(it, 'dc:date') || grab(it, 'published') || grab(it, 'updated');
 
-        if (!title || title.length < 10) return;
+        if (!title || title.length < 15 || !link || !link.startsWith('http') || title.startsWith('- ')) return;
 
-        // Clean trailing Google News source suffix like " - Reuters"
-        if (title.endsWith(' - Reuters')) title = title.replace(/ - Reuters$/, '');
-        if (title.endsWith(' - Les Échos')) title = title.replace(/ - Les Échos$/, '');
-        if (title.endsWith(' - FX Empire')) title = title.replace(/ - FX Empire$/, '');
-        if (title.endsWith(' - BFM Bourse')) title = title.replace(/ - BFM Bourse$/, '');
+        // Parse date strictly — reject undated or >14 days old or >24h future
+        if (!pubDateStr) return;
+        let normalizedDateStr = pubDateStr.trim();
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(normalizedDateStr)) {
+          normalizedDateStr = normalizedDateStr.replace(' ', 'T') + 'Z';
+        }
+        const d = new Date(normalizedDateStr);
+        if (isNaN(d.getTime())) return;
+        const pubTime = d.getTime();
+        if (now - pubTime > MAX_AGE_MS) return;
+        if (pubTime - now > 24 * 3600 * 1000) return;
 
-        const normTitle = title.toLowerCase().slice(0, 50);
+        // Strict FX/Macro relevance filter
+        if (!isRelevantFxMacro(title, desc, feed.strictFilter)) return;
+
+        const normTitle = title.toLowerCase().slice(0, 55);
         if (seenTitles.has(normTitle)) return;
         seenTitles.add(normTitle);
 
-        const d = pubDateStr ? new Date(pubDateStr) : new Date();
-        const pubTime = isNaN(d.getTime()) ? now : d.getTime();
-        const artDateStr = parisDateStr(pubTime);
-        const todayDateStr = parisDateStr(now);
-        const isToday = (artDateStr === todayDateStr);
+        const artIso = new Date(pubTime).toLocaleDateString('sv-SE', { timeZone: 'Europe/Paris' });
+        const artDateStr = new Date(pubTime).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris', day: '2-digit', month: '2-digit', year: 'numeric' });
+        const isToday = (artIso === todayIso);
         const isKey = detectKeyDossier(title, desc, pubTime, now);
 
         articles.push({
           id: feed.id + '-' + pubTime + '-' + Math.random().toString(36).substr(2, 6),
           title,
-          summary: desc ? (desc.length > 180 ? desc.slice(0, 177) + '...' : desc) : '',
+          summary: desc ? (desc.length > 200 ? desc.slice(0, 197) + '...' : desc) : '',
           link,
           publisher: feed.name,
           sourceId: feed.id,
@@ -547,6 +567,7 @@ async function fetchPressReview() {
           isToday,
           isKeyDossier: isKey,
           pubTime,
+          isoDate: artIso,
           dateStr: artDateStr,
           timeAgo: timeAgo(d)
         });
